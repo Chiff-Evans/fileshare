@@ -1069,7 +1069,7 @@
     </div>
 
     <!-- QR Script (simple generator) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"></script>
 
     <script>
       // ─── State ───────────────────────────────────────────────────────────────────
@@ -1078,6 +1078,15 @@
       let selectedFiles = [];
       let myPeerId = null;
       let mode = "send";
+
+      // PeerJS server config - UPDATE THIS with your deployed server URL
+      const peerConfig = {
+        host: "0.peerjs.com", // Public PeerJS server for testing
+        secure: true,
+        port: 443,
+        path: "/",
+        debug: 0,
+      };
 
       // Chunk size for chunked transfer
       const CHUNK_SIZE = 64 * 1024; // 64KB
@@ -1178,7 +1187,7 @@
 
         // Destroy old peer
         if (peer) peer.destroy();
-        peer = new Peer({ debug: 0 });
+        peer = new Peer(peerConfig);
 
         peer.on("open", (id) => {
           myPeerId = id;
@@ -1193,7 +1202,9 @@
               margin: 1,
               color: { dark: "#000", light: "#fff" },
             });
-          } catch (e) {}
+          } catch (e) {
+            console.error("QR generation failed", e);
+          }
 
           document.getElementById("shareSection").classList.remove("hidden");
           document.getElementById("generateSection").classList.add("hidden");
@@ -1309,7 +1320,7 @@
         document.getElementById("connectBtn").disabled = true;
 
         if (peer) peer.destroy();
-        peer = new Peer({ debug: 0 });
+        peer = new Peer(peerConfig);
 
         peer.on("open", (myId) => {
           conn = peer.connect(targetId, { reliable: true });
