@@ -1,0 +1,1468 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AirDrop — Instant File Sharing</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0a0a0f;
+        --surface: #13131a;
+        --surface2: #1c1c28;
+        --border: rgba(255, 255, 255, 0.07);
+        --accent: #6c63ff;
+        --accent2: #ff6584;
+        --accent3: #43e97b;
+        --text: #f0f0f8;
+        --muted: #6b6b80;
+        --card-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "DM Sans", sans-serif;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      /* Animated background */
+      .bg-orbs {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        overflow: hidden;
+      }
+      .orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.15;
+        animation: float 12s ease-in-out infinite;
+      }
+      .orb1 {
+        width: 500px;
+        height: 500px;
+        background: var(--accent);
+        top: -150px;
+        left: -150px;
+        animation-delay: 0s;
+      }
+      .orb2 {
+        width: 400px;
+        height: 400px;
+        background: var(--accent2);
+        bottom: -100px;
+        right: -100px;
+        animation-delay: -4s;
+      }
+      .orb3 {
+        width: 300px;
+        height: 300px;
+        background: var(--accent3);
+        top: 40%;
+        left: 60%;
+        animation-delay: -8s;
+      }
+
+      @keyframes float {
+        0%,
+        100% {
+          transform: translate(0, 0) scale(1);
+        }
+        33% {
+          transform: translate(20px, -20px) scale(1.05);
+        }
+        66% {
+          transform: translate(-15px, 15px) scale(0.95);
+        }
+      }
+
+      /* Layout */
+      .app {
+        position: relative;
+        z-index: 1;
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 24px 20px 60px;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Header */
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 0 32px;
+      }
+      .logo {
+        font-family: "Syne", sans-serif;
+        font-weight: 800;
+        font-size: 1.4rem;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -0.5px;
+      }
+      .logo span {
+        font-weight: 400;
+        opacity: 0.6;
+      }
+      .badge {
+        font-size: 0.7rem;
+        font-weight: 500;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        background: rgba(108, 99, 255, 0.15);
+        color: var(--accent);
+        border: 1px solid rgba(108, 99, 255, 0.3);
+        padding: 4px 10px;
+        border-radius: 20px;
+      }
+
+      /* Mode switcher */
+      .mode-switch {
+        display: flex;
+        background: var(--surface);
+        border-radius: 14px;
+        padding: 4px;
+        gap: 2px;
+        margin-bottom: 32px;
+        border: 1px solid var(--border);
+      }
+      .mode-btn {
+        flex: 1;
+        padding: 12px 20px;
+        background: none;
+        border: none;
+        color: var(--muted);
+        font-family: "DM Sans", sans-serif;
+        font-size: 0.9rem;
+        font-weight: 500;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+      }
+      .mode-btn.active {
+        background: var(--surface2);
+        color: var(--text);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      }
+      .mode-btn svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      /* Cards */
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 32px;
+        box-shadow: var(--card-shadow);
+      }
+
+      /* Send panel */
+      .drop-zone {
+        border: 2px dashed rgba(108, 99, 255, 0.3);
+        border-radius: 16px;
+        padding: 48px 24px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: rgba(108, 99, 255, 0.03);
+        position: relative;
+        overflow: hidden;
+      }
+      .drop-zone:hover,
+      .drop-zone.dragover {
+        border-color: var(--accent);
+        background: rgba(108, 99, 255, 0.08);
+        transform: scale(1.005);
+      }
+      .drop-zone input[type="file"] {
+        position: absolute;
+        inset: 0;
+        opacity: 0;
+        cursor: pointer;
+        width: 100%;
+        height: 100%;
+      }
+      .drop-icon {
+        width: 64px;
+        height: 64px;
+        background: linear-gradient(135deg, var(--accent), #9b8eff);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+        box-shadow: 0 8px 24px rgba(108, 99, 255, 0.4);
+      }
+      .drop-icon svg {
+        width: 28px;
+        height: 28px;
+        color: white;
+      }
+      .drop-title {
+        font-family: "Syne", sans-serif;
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+      .drop-sub {
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.5;
+      }
+      .drop-sub strong {
+        color: var(--accent);
+      }
+
+      /* File list */
+      .file-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 20px;
+      }
+      .file-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: var(--surface2);
+        border-radius: 12px;
+        padding: 12px 16px;
+        border: 1px solid var(--border);
+        animation: slideIn 0.3s ease;
+      }
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .file-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--accent), #9b8eff);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 0.65rem;
+        font-weight: 700;
+        color: white;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+      }
+      .file-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .file-name {
+        font-weight: 500;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .file-size {
+        color: var(--muted);
+        font-size: 0.78rem;
+        margin-top: 2px;
+      }
+      .file-remove {
+        background: none;
+        border: none;
+        color: var(--muted);
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 6px;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+      }
+      .file-remove:hover {
+        color: var(--accent2);
+        background: rgba(255, 101, 132, 0.1);
+      }
+
+      /* Share link */
+      .share-section {
+        margin-top: 24px;
+      }
+      .share-label {
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 10px;
+      }
+      .share-link-box {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .share-link-input {
+        flex: 1;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-family: "DM Sans", sans-serif;
+        font-size: 0.85rem;
+        padding: 12px 16px;
+        border-radius: 12px;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      .share-link-input:focus {
+        border-color: var(--accent);
+      }
+      .copy-btn {
+        padding: 12px 20px;
+        border-radius: 12px;
+        background: rgba(108, 99, 255, 0.15);
+        color: var(--accent);
+        border: 1px solid rgba(108, 99, 255, 0.3);
+        font-family: "DM Sans", sans-serif;
+        font-size: 0.85rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .copy-btn:hover {
+        background: rgba(108, 99, 255, 0.25);
+      }
+      .copy-btn.copied {
+        background: rgba(67, 233, 123, 0.15);
+        color: var(--accent3);
+        border-color: rgba(67, 233, 123, 0.3);
+      }
+
+      /* QR placeholder */
+      .qr-section {
+        margin-top: 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        background: var(--surface2);
+        border-radius: 14px;
+        padding: 16px;
+        border: 1px solid var(--border);
+      }
+      .qr-box {
+        width: 80px;
+        height: 80px;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 2px solid var(--border);
+        flex-shrink: 0;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .qr-box canvas {
+        width: 76px !important;
+        height: 76px !important;
+      }
+      .qr-info {
+        flex: 1;
+      }
+      .qr-title {
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 4px;
+      }
+      .qr-sub {
+        color: var(--muted);
+        font-size: 0.8rem;
+        line-height: 1.4;
+      }
+
+      /* Status */
+      .status-bar {
+        margin-top: 16px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        display: none;
+        align-items: center;
+        gap: 10px;
+      }
+      .status-bar.show {
+        display: flex;
+      }
+      .status-bar.waiting {
+        background: rgba(108, 99, 255, 0.1);
+        color: var(--accent);
+        border: 1px solid rgba(108, 99, 255, 0.2);
+      }
+      .status-bar.connected {
+        background: rgba(67, 233, 123, 0.1);
+        color: var(--accent3);
+        border: 1px solid rgba(67, 233, 123, 0.2);
+      }
+      .status-bar.transferring {
+        background: rgba(255, 165, 0, 0.1);
+        color: #ffa500;
+        border: 1px solid rgba(255, 165, 0, 0.2);
+      }
+      .status-bar.error {
+        background: rgba(255, 101, 132, 0.1);
+        color: var(--accent2);
+        border: 1px solid rgba(255, 101, 132, 0.2);
+      }
+
+      .pulse {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: currentColor;
+        animation: pulse 1.5s infinite;
+        flex-shrink: 0;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      /* Progress */
+      .progress-wrap {
+        margin-top: 16px;
+        display: none;
+      }
+      .progress-wrap.show {
+        display: block;
+      }
+      .progress-header {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.82rem;
+        color: var(--muted);
+        margin-bottom: 8px;
+      }
+      .progress-bar {
+        height: 6px;
+        background: var(--surface2);
+        border-radius: 99px;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        border-radius: 99px;
+        background: linear-gradient(90deg, var(--accent), var(--accent2));
+        transition: width 0.3s ease;
+        width: 0%;
+      }
+
+      /* Receive panel */
+      .receive-panel {
+        text-align: center;
+      }
+      .receive-icon {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, var(--accent2), #ff9a9e);
+        border-radius: 24px;
+        margin: 0 auto 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8px 32px rgba(255, 101, 132, 0.4);
+      }
+      .receive-icon svg {
+        width: 36px;
+        height: 36px;
+        color: white;
+      }
+      .receive-title {
+        font-family: "Syne", sans-serif;
+        font-weight: 800;
+        font-size: 1.5rem;
+        margin-bottom: 8px;
+      }
+      .receive-sub {
+        color: var(--muted);
+        line-height: 1.6;
+        margin-bottom: 28px;
+        font-size: 0.95rem;
+      }
+
+      .code-input-wrap {
+        display: flex;
+        gap: 10px;
+        max-width: 400px;
+        margin: 0 auto 20px;
+      }
+      .code-input {
+        flex: 1;
+        background: var(--surface2);
+        border: 1.5px solid var(--border);
+        color: var(--text);
+        font-family: "Syne", sans-serif;
+        font-size: 1.1rem;
+        font-weight: 700;
+        letter-spacing: 3px;
+        text-align: center;
+        padding: 14px 16px;
+        border-radius: 14px;
+        outline: none;
+        transition: border-color 0.2s;
+        text-transform: uppercase;
+      }
+      .code-input:focus {
+        border-color: var(--accent2);
+      }
+      .code-input::placeholder {
+        font-weight: 400;
+        letter-spacing: 1px;
+        text-transform: none;
+        font-size: 0.9rem;
+        opacity: 0.5;
+      }
+
+      /* Buttons */
+      .btn {
+        padding: 14px 28px;
+        border-radius: 14px;
+        border: none;
+        cursor: pointer;
+        font-family: "DM Sans", sans-serif;
+        font-size: 0.95rem;
+        font-weight: 500;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .btn-primary {
+        background: linear-gradient(135deg, var(--accent), #9b8eff);
+        color: white;
+        box-shadow: 0 4px 20px rgba(108, 99, 255, 0.4);
+      }
+      .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 28px rgba(108, 99, 255, 0.5);
+      }
+      .btn-primary:active {
+        transform: translateY(0);
+      }
+      .btn-secondary {
+        background: linear-gradient(135deg, var(--accent2), #ff9a9e);
+        color: white;
+        box-shadow: 0 4px 20px rgba(255, 101, 132, 0.4);
+      }
+      .btn-secondary:hover {
+        transform: translateY(-1px);
+      }
+      .btn-danger {
+        background: rgba(255, 101, 132, 0.15);
+        color: var(--accent2);
+        border: 1px solid rgba(255, 101, 132, 0.2);
+      }
+      .btn-danger:hover {
+        background: rgba(255, 101, 132, 0.25);
+      }
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none !important;
+      }
+
+      /* Received files */
+      .received-files {
+        margin-top: 24px;
+        display: none;
+        text-align: left;
+      }
+      .received-files.show {
+        display: block;
+      }
+      .received-title {
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 1rem;
+        margin-bottom: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .received-title .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--accent3);
+      }
+
+      .download-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: var(--surface2);
+        border-radius: 12px;
+        padding: 12px 16px;
+        border: 1px solid rgba(67, 233, 123, 0.15);
+        margin-bottom: 10px;
+        animation: slideIn 0.3s ease;
+      }
+      .download-btn {
+        padding: 8px 16px;
+        border-radius: 9px;
+        font-size: 0.8rem;
+        background: rgba(67, 233, 123, 0.15);
+        color: var(--accent3);
+        border: 1px solid rgba(67, 233, 123, 0.25);
+        cursor: pointer;
+        font-family: "DM Sans", sans-serif;
+        font-weight: 500;
+        transition: all 0.2s;
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .download-btn:hover {
+        background: rgba(67, 233, 123, 0.25);
+      }
+
+      /* Info section */
+      .info-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-top: 40px;
+      }
+      .info-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 20px;
+        text-align: center;
+      }
+      .info-emoji {
+        font-size: 1.8rem;
+        margin-bottom: 10px;
+      }
+      .info-title {
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 0.95rem;
+        margin-bottom: 6px;
+      }
+      .info-desc {
+        color: var(--muted);
+        font-size: 0.8rem;
+        line-height: 1.5;
+      }
+
+      /* Divider */
+      .divider {
+        height: 1px;
+        background: var(--border);
+        margin: 28px 0;
+      }
+
+      /* Transfer speed display */
+      .speed-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(67, 233, 123, 0.1);
+        color: var(--accent3);
+        border: 1px solid rgba(67, 233, 123, 0.2);
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 500;
+      }
+
+      /* Helpers */
+      .hidden {
+        display: none !important;
+      }
+      .flex-center {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .gap-2 {
+        gap: 8px;
+      }
+
+      /* Mobile */
+      @media (max-width: 600px) {
+        .card {
+          padding: 20px;
+        }
+        .info-grid {
+          grid-template-columns: 1fr;
+        }
+        .share-link-box {
+          flex-direction: column;
+        }
+        .code-input-wrap {
+          flex-direction: column;
+        }
+        .qr-section {
+          flex-direction: column;
+          text-align: center;
+        }
+      }
+
+      /* Spinner */
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid currentColor;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        flex-shrink: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg-orbs">
+      <div class="orb orb1"></div>
+      <div class="orb orb2"></div>
+      <div class="orb orb3"></div>
+    </div>
+
+    <div class="app">
+      <header>
+        <div class="logo">air<span>drop</span> ✦</div>
+        <div class="badge">P2P · No Storage</div>
+      </header>
+
+      <!-- Mode Switch -->
+      <div class="mode-switch">
+        <button
+          class="mode-btn active"
+          id="sendTab"
+          onclick="switchMode('send')"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M22 2L11 13" />
+            <path d="M22 2L15 22 11 13 2 9l20-7z" />
+          </svg>
+          Send Files
+        </button>
+        <button
+          class="mode-btn"
+          id="receiveTab"
+          onclick="switchMode('receive')"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          Receive Files
+        </button>
+      </div>
+
+      <!-- SEND PANEL -->
+      <div id="sendPanel">
+        <div class="card">
+          <!-- Drop zone -->
+          <div class="drop-zone" id="dropZone">
+            <input
+              type="file"
+              id="fileInput"
+              multiple
+              onchange="handleFiles(this.files)"
+            />
+            <div class="drop-icon">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+            </div>
+            <div class="drop-title">Drop files here</div>
+            <div class="drop-sub">
+              or <strong>click to browse</strong> · Any file type, any size
+            </div>
+          </div>
+
+          <!-- File list -->
+          <div class="file-list" id="fileList"></div>
+
+          <!-- Generate Link Button -->
+          <div
+            style="margin-top: 20px; text-align: center"
+            id="generateSection"
+            class="hidden"
+          >
+            <button
+              class="btn btn-primary"
+              onclick="generateShareLink()"
+              id="generateBtn"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"
+                />
+                <path
+                  d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"
+                />
+              </svg>
+              Generate Share Link
+            </button>
+          </div>
+
+          <!-- Share section (after generating) -->
+          <div id="shareSection" class="hidden">
+            <div class="divider"></div>
+            <div class="share-section">
+              <div class="share-label">Share this link</div>
+              <div class="share-link-box">
+                <input
+                  class="share-link-input"
+                  id="shareLinkInput"
+                  readonly
+                  type="text"
+                  value=""
+                />
+                <button class="copy-btn" id="copyBtn" onclick="copyLink()">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path
+                      d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"
+                    />
+                  </svg>
+                  Copy
+                </button>
+              </div>
+            </div>
+
+            <!-- QR Code -->
+            <div class="qr-section" style="margin-top: 14px">
+              <div class="qr-box" id="qrBox">
+                <canvas id="qrCanvas"></canvas>
+              </div>
+              <div class="qr-info">
+                <div class="qr-title">Scan to receive on mobile</div>
+                <div class="qr-sub">
+                  Open the camera on any phone or tablet and scan this QR code —
+                  no app needed
+                </div>
+              </div>
+            </div>
+
+            <!-- Status -->
+            <div class="status-bar waiting show" id="senderStatus">
+              <div class="pulse"></div>
+              Waiting for receiver to connect…
+            </div>
+
+            <!-- Progress -->
+            <div class="progress-wrap" id="progressWrap">
+              <div class="progress-header">
+                <span id="progressLabel">Transferring…</span>
+                <span id="progressPct">0%</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+              </div>
+            </div>
+
+            <!-- Reset -->
+            <div style="margin-top: 16px; text-align: right">
+              <button
+                class="btn btn-danger"
+                onclick="resetAll()"
+                style="font-size: 0.8rem; padding: 8px 16px"
+              >
+                Clear & Start Over
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RECEIVE PANEL -->
+      <div id="receivePanel" class="hidden">
+        <div class="card receive-panel">
+          <div class="receive-icon">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+          </div>
+          <div class="receive-title">Receive Files</div>
+          <div class="receive-sub">
+            Enter the code from the sender's share link,<br />or just open the
+            full link on this device.
+          </div>
+
+          <div class="code-input-wrap">
+            <input
+              class="code-input"
+              id="peerCodeInput"
+              placeholder="Paste code or link"
+              maxlength="200"
+              oninput="checkCodeInput()"
+            />
+          </div>
+          <button
+            class="btn btn-secondary"
+            id="connectBtn"
+            onclick="connectToPeer()"
+            disabled
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M5 12h14" />
+              <path d="M12 5l7 7-7 7" />
+            </svg>
+            Connect & Receive
+          </button>
+
+          <!-- Status -->
+          <div
+            class="status-bar"
+            id="receiverStatus"
+            style="max-width: 400px; margin: 16px auto 0; text-align: left"
+          >
+            <div class="pulse"></div>
+            <span id="receiverStatusText">–</span>
+          </div>
+
+          <!-- Progress -->
+          <div
+            class="progress-wrap"
+            id="rxProgressWrap"
+            style="max-width: 400px; margin: 0 auto"
+          >
+            <div class="progress-header">
+              <span id="rxProgressLabel">Receiving…</span>
+              <span id="rxProgressPct">0%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="rxProgressFill"></div>
+            </div>
+          </div>
+
+          <!-- Received files -->
+          <div class="received-files" id="receivedFiles">
+            <div class="received-title">
+              <div class="dot"></div>
+              Received Files
+            </div>
+            <div id="receivedList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Info grid -->
+      <div class="info-grid">
+        <div class="info-card">
+          <div class="info-emoji">🔒</div>
+          <div class="info-title">End-to-End</div>
+          <div class="info-desc">
+            Files travel directly between devices. Nothing is ever stored on a
+            server.
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="info-emoji">⚡️</div>
+          <div class="info-title">Instant Transfer</div>
+          <div class="info-desc">
+            Peer-to-peer via WebRTC. Maximum speed with no upload/download
+            bottleneck.
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="info-emoji">📱</div>
+          <div class="info-title">Works Everywhere</div>
+          <div class="info-desc">
+            Any browser, any device. No app install. Just open the link and go.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- QR Script (simple generator) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+      // ─── State ───────────────────────────────────────────────────────────────────
+      let peer = null;
+      let conn = null;
+      let selectedFiles = [];
+      let myPeerId = null;
+      let mode = "send";
+
+      // Chunk size for chunked transfer
+      const CHUNK_SIZE = 64 * 1024; // 64KB
+
+      // ─── Drag & Drop ─────────────────────────────────────────────────────────────
+      const dropZone = document.getElementById("dropZone");
+      dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.classList.add("dragover");
+      });
+      dropZone.addEventListener("dragleave", () =>
+        dropZone.classList.remove("dragover"),
+      );
+      dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("dragover");
+        handleFiles(e.dataTransfer.files);
+      });
+
+      // ─── Mode switch ─────────────────────────────────────────────────────────────
+      function switchMode(m) {
+        mode = m;
+        document
+          .getElementById("sendPanel")
+          .classList.toggle("hidden", m !== "send");
+        document
+          .getElementById("receivePanel")
+          .classList.toggle("hidden", m !== "receive");
+        document
+          .getElementById("sendTab")
+          .classList.toggle("active", m === "send");
+        document
+          .getElementById("receiveTab")
+          .classList.toggle("active", m === "receive");
+
+        // Auto-read peer id from URL on receive mode
+        if (m === "receive") {
+          const params = new URLSearchParams(window.location.search);
+          const pid = params.get("peer");
+          if (pid) {
+            document.getElementById("peerCodeInput").value = pid;
+            checkCodeInput();
+          }
+        }
+      }
+
+      // ─── File handling ────────────────────────────────────────────────────────────
+      function handleFiles(files) {
+        for (const f of files) {
+          if (
+            !selectedFiles.find((x) => x.name === f.name && x.size === f.size)
+          ) {
+            selectedFiles.push(f);
+          }
+        }
+        renderFileList();
+      }
+
+      function renderFileList() {
+        const list = document.getElementById("fileList");
+        list.innerHTML = "";
+        selectedFiles.forEach((f, i) => {
+          const ext = f.name.split(".").pop().slice(0, 4) || "?";
+          const div = document.createElement("div");
+          div.className = "file-item";
+          div.innerHTML = `
+      <div class="file-icon">${ext}</div>
+      <div class="file-info">
+        <div class="file-name">${f.name}</div>
+        <div class="file-size">${fmtSize(f.size)}</div>
+      </div>
+      <button class="file-remove" onclick="removeFile(${i})">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>`;
+          list.appendChild(div);
+        });
+        document
+          .getElementById("generateSection")
+          .classList.toggle("hidden", selectedFiles.length === 0);
+      }
+
+      function removeFile(i) {
+        selectedFiles.splice(i, 1);
+        renderFileList();
+      }
+
+      function fmtSize(bytes) {
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+        if (bytes < 1024 * 1024 * 1024)
+          return (bytes / 1024 / 1024).toFixed(1) + " MB";
+        return (bytes / 1024 / 1024 / 1024).toFixed(2) + " GB";
+      }
+
+      // ─── Peer setup (sender) ──────────────────────────────────────────────────────
+      function generateShareLink() {
+        if (selectedFiles.length === 0) return;
+
+        // Destroy old peer
+        if (peer) peer.destroy();
+        peer = new Peer({ debug: 0 });
+
+        peer.on("open", (id) => {
+          myPeerId = id;
+          const url = `${window.location.origin}${window.location.pathname}?peer=${id}`;
+          document.getElementById("shareLinkInput").value = url;
+
+          // Generate QR
+          try {
+            const canvas = document.getElementById("qrCanvas");
+            QRCode.toCanvas(canvas, url, {
+              width: 76,
+              margin: 1,
+              color: { dark: "#000", light: "#fff" },
+            });
+          } catch (e) {}
+
+          document.getElementById("shareSection").classList.remove("hidden");
+          document.getElementById("generateSection").classList.add("hidden");
+          setSenderStatus("waiting", "Waiting for receiver to connect…");
+        });
+
+        peer.on("connection", (c) => {
+          conn = c;
+          setSenderStatus(
+            "connected",
+            "Receiver connected! Starting transfer…",
+          );
+
+          conn.on("open", () => {
+            sendFiles();
+          });
+
+          conn.on("error", (e) =>
+            setSenderStatus("error", "Connection error: " + e.message),
+          );
+        });
+
+        peer.on("error", (e) =>
+          setSenderStatus("error", "Error: " + e.message),
+        );
+      }
+
+      // ─── File sending (chunked) ───────────────────────────────────────────────────
+      async function sendFiles() {
+        if (!conn || selectedFiles.length === 0) return;
+
+        // Send manifest
+        const manifest = selectedFiles.map((f) => ({
+          name: f.name,
+          size: f.size,
+          type: f.type,
+        }));
+        conn.send({ type: "manifest", files: manifest });
+
+        setSenderStatus(
+          "transferring",
+          `Sending ${selectedFiles.length} file(s)…`,
+        );
+        showProgress(true);
+
+        let totalBytes = selectedFiles.reduce((a, f) => a + f.size, 0);
+        let sentBytes = 0;
+
+        for (let fi = 0; fi < selectedFiles.length; fi++) {
+          const file = selectedFiles[fi];
+          const reader = new FileReader();
+
+          conn.send({ type: "file-start", index: fi });
+
+          // Send in chunks
+          let offset = 0;
+          while (offset < file.size) {
+            const slice = file.slice(offset, offset + CHUNK_SIZE);
+            const buf = await readChunk(slice);
+            conn.send({ type: "chunk", index: fi, data: buf, offset });
+            offset += buf.byteLength;
+            sentBytes += buf.byteLength;
+
+            const pct = Math.round((sentBytes / totalBytes) * 100);
+            updateProgress(pct, `Sending: ${file.name}`);
+            // Small yield
+            await new Promise((r) => setTimeout(r, 0));
+          }
+
+          conn.send({ type: "file-end", index: fi });
+        }
+
+        conn.send({ type: "done" });
+        setSenderStatus(
+          "connected",
+          `✓ Transfer complete — ${selectedFiles.length} file(s) sent`,
+        );
+        updateProgress(100, "Complete!");
+      }
+
+      function readChunk(blob) {
+        return new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload = () => res(r.result);
+          r.onerror = rej;
+          r.readAsArrayBuffer(blob);
+        });
+      }
+
+      // ─── Receiver ─────────────────────────────────────────────────────────────────
+      let rxBuffers = {};
+      let rxManifest = [];
+
+      function checkCodeInput() {
+        const val = document.getElementById("peerCodeInput").value.trim();
+        document.getElementById("connectBtn").disabled = val.length < 4;
+      }
+
+      function connectToPeer() {
+        let raw = document.getElementById("peerCodeInput").value.trim();
+
+        // Extract peer id from URL if pasted as full link
+        try {
+          const url = new URL(raw);
+          const pid = url.searchParams.get("peer");
+          if (pid) raw = pid;
+        } catch (e) {}
+
+        const targetId = raw;
+        if (!targetId) return;
+
+        setReceiverStatus("waiting", "Connecting to sender…");
+        document.getElementById("connectBtn").disabled = true;
+
+        if (peer) peer.destroy();
+        peer = new Peer({ debug: 0 });
+
+        peer.on("open", (myId) => {
+          conn = peer.connect(targetId, { reliable: true });
+
+          conn.on("open", () => {
+            setReceiverStatus("connected", "Connected! Waiting for files…");
+          });
+
+          conn.on("data", handleReceivedData);
+          conn.on("error", (e) =>
+            setReceiverStatus("error", "Connection error: " + e.message),
+          );
+          conn.on("close", () =>
+            setReceiverStatus("waiting", "Connection closed."),
+          );
+        });
+
+        peer.on("error", (e) => {
+          setReceiverStatus("error", "Could not connect: " + e.message);
+          document.getElementById("connectBtn").disabled = false;
+        });
+      }
+
+      function handleReceivedData(data) {
+        if (data.type === "manifest") {
+          rxManifest = data.files;
+          rxBuffers = {};
+          data.files.forEach((f, i) => (rxBuffers[i] = []));
+          setReceiverStatus(
+            "transferring",
+            `Receiving ${data.files.length} file(s)…`,
+          );
+          showRxProgress(true);
+        }
+
+        if (data.type === "chunk") {
+          rxBuffers[data.index].push(data.data);
+          // Update progress estimate
+          const received = Object.values(rxBuffers)
+            .flat()
+            .reduce((a, b) => a + b.byteLength, 0);
+          const total = rxManifest.reduce((a, f) => a + f.size, 0);
+          const pct = Math.round((received / total) * 100);
+          updateRxProgress(pct, `Receiving: ${rxManifest[data.index]?.name}`);
+        }
+
+        if (data.type === "file-end") {
+          const fi = data.index;
+          const meta = rxManifest[fi];
+          const chunks = rxBuffers[fi];
+          const blob = new Blob(chunks, {
+            type: meta.type || "application/octet-stream",
+          });
+          addReceivedFile(meta, blob);
+          rxBuffers[fi] = [];
+        }
+
+        if (data.type === "done") {
+          setReceiverStatus("connected", `✓ All files received successfully!`);
+          updateRxProgress(100, "Complete!");
+        }
+      }
+
+      function addReceivedFile(meta, blob) {
+        const wrap = document.getElementById("receivedFiles");
+        const list = document.getElementById("receivedList");
+        wrap.classList.add("show");
+
+        const url = URL.createObjectURL(blob);
+        const ext = meta.name.split(".").pop().slice(0, 4) || "?";
+
+        const div = document.createElement("div");
+        div.className = "download-item";
+        div.innerHTML = `
+    <div class="file-icon">${ext}</div>
+    <div class="file-info">
+      <div class="file-name">${meta.name}</div>
+      <div class="file-size">${fmtSize(meta.size)}</div>
+    </div>
+    <a href="${url}" download="${meta.name}" class="download-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Save
+    </a>`;
+        list.appendChild(div);
+      }
+
+      // ─── UI helpers ───────────────────────────────────────────────────────────────
+      function setSenderStatus(type, msg) {
+        const el = document.getElementById("senderStatus");
+        el.className = `status-bar ${type} show`;
+        el.innerHTML = `<div class="pulse"></div> ${msg}`;
+      }
+
+      function setReceiverStatus(type, msg) {
+        const el = document.getElementById("receiverStatus");
+        el.className = `status-bar ${type} show`;
+        document.getElementById("receiverStatusText").textContent = msg;
+      }
+
+      function showProgress(show) {
+        document.getElementById("progressWrap").classList.toggle("show", show);
+      }
+
+      function updateProgress(pct, label) {
+        document.getElementById("progressFill").style.width = pct + "%";
+        document.getElementById("progressPct").textContent = pct + "%";
+        document.getElementById("progressLabel").textContent = label;
+      }
+
+      function showRxProgress(show) {
+        document
+          .getElementById("rxProgressWrap")
+          .classList.toggle("show", show);
+      }
+
+      function updateRxProgress(pct, label) {
+        document.getElementById("rxProgressFill").style.width = pct + "%";
+        document.getElementById("rxProgressPct").textContent = pct + "%";
+        document.getElementById("rxProgressLabel").textContent =
+          label || "Receiving…";
+      }
+
+      function copyLink() {
+        const val = document.getElementById("shareLinkInput").value;
+        navigator.clipboard.writeText(val).then(() => {
+          const btn = document.getElementById("copyBtn");
+          btn.classList.add("copied");
+          btn.textContent = "✓ Copied!";
+          setTimeout(() => {
+            btn.classList.remove("copied");
+            btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy`;
+          }, 2000);
+        });
+      }
+
+      function resetAll() {
+        if (peer) peer.destroy();
+        peer = conn = null;
+        selectedFiles = [];
+        myPeerId = null;
+        renderFileList();
+        document.getElementById("shareSection").classList.add("hidden");
+        document.getElementById("generateSection").classList.add("hidden");
+        document.getElementById("progressWrap").classList.remove("show");
+        document.getElementById("senderStatus").classList.remove("show");
+      }
+
+      // ─── Auto-switch to receive if URL has peer param ─────────────────────────────
+      window.addEventListener("DOMContentLoaded", () => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("peer")) {
+          switchMode("receive");
+        }
+      });
+    </script>
+  </body>
+</html>
