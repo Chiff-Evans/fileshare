@@ -1306,14 +1306,29 @@
       function connectToPeer() {
         let raw = document.getElementById("peerCodeInput").value.trim();
 
+        let targetId = null;
+
         // Extract peer id from URL if pasted as full link
         try {
           const url = new URL(raw);
           const pid = url.searchParams.get("peer");
-          if (pid) raw = pid;
+          if (pid) {
+            targetId = pid;
+          }
         } catch (e) {}
 
-        const targetId = raw;
+        // If no peer ID from URL, try to extract UUID from raw input
+        if (!targetId) {
+          const uuidMatch = raw.match(
+            /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
+          );
+          if (uuidMatch) {
+            targetId = uuidMatch[0];
+          } else {
+            targetId = raw; // fallback
+          }
+        }
+
         if (!targetId) return;
 
         setReceiverStatus("waiting", "Connecting to sender…");
