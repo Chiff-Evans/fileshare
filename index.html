@@ -1068,8 +1068,8 @@
       </div>
     </div>
 
-    <!-- QR Script (simple generator) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"></script>
+    <!-- QR Script (QR code generator) -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 
     <script>
       // ─── State ───────────────────────────────────────────────────────────────────
@@ -1194,17 +1194,25 @@
           const url = `${window.location.origin}${window.location.pathname}?peer=${id}`;
           document.getElementById("shareLinkInput").value = url;
 
-          // Generate QR
-          try {
-            const canvas = document.getElementById("qrCanvas");
-            QRCode.toCanvas(canvas, url, {
-              width: 76,
-              margin: 1,
-              color: { dark: "#000", light: "#fff" },
-            });
-          } catch (e) {
-            console.error("QR generation failed", e);
-          }
+          // Generate QR (with delay to ensure library is loaded)
+          setTimeout(() => {
+            try {
+              if (typeof QRCode !== "undefined") {
+                const canvas = document.getElementById("qrCanvas");
+                QRCode.toCanvas(canvas, url, {
+                  width: 76,
+                  margin: 1,
+                  color: { dark: "#000", light: "#fff" },
+                });
+              }
+            } catch (e) {
+              console.error("QR generation failed", e);
+              // Show a fallback message instead
+              const qrBox = document.getElementById("qrBox");
+              qrBox.innerHTML =
+                '<div style="font-size: 0.75rem; color: #999;">QR unavailable</div>';
+            }
+          }, 100);
 
           document.getElementById("shareSection").classList.remove("hidden");
           document.getElementById("generateSection").classList.add("hidden");
