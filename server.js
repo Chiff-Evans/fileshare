@@ -3,7 +3,8 @@ const https = require("https");
 const http = require("http");
 const fs = require("fs");
 
-const PORT = process.env.PORT || 9999;
+// const PORT = process.env.PORT || 9999;
+const PORT =  9999;
 
 // Check if SSL certificates exist for HTTPS
 const certPath =

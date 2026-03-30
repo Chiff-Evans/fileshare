@@ -1083,7 +1083,7 @@
       const peerConfig = {
         host: window.location.hostname, // Use same domain as the page
         secure: isSecure, // Use HTTPS if page is HTTPS
-        port: isSecure ? 443 : 9999, // Use port 443 for HTTPS, 9999 for HTTP
+        port: isSecure ? 9999 : 9999, // Use port 443 for HTTPS, 9999 for HTTP
         path: "/peerjs",
         debug: 0,
       };
