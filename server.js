@@ -2,11 +2,12 @@ const { PeerServer } = require("peer");
 const express = require("express");
 const app = express();
 
-const server = app.listen(process.env.PORT || 9999);
+const PORT = process.env.PORT || 9999;
+const server = app.listen(PORT);
 
 const peerServer = PeerServer({
-  port: process.env.PORT || 9999,
+  server: server,
   path: "/peerjs",
 });
 
-console.log("PeerJS server running on port", process.env.PORT || 9999);
+console.log("PeerJS server running on port", PORT);
