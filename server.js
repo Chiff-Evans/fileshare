@@ -33,13 +33,11 @@ server.listen(PORT);
 
 const peerServer = PeerServer({
   server: server,
-  path: "/",
+  path: "/peerjs",
   cors: {
     origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   },
 });
 
-console.log(
-  "PeerJS endpoints available at: /id, /peers, etc. (accessed via /peerjs in client)",
-);
+console.log("PeerJS endpoints available at: /peerjs/id, /peerjs/peers, etc.");
