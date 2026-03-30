@@ -6,8 +6,12 @@ const fs = require("fs");
 const PORT = process.env.PORT || 9999;
 
 // Check if SSL certificates exist for HTTPS
-const certPath = process.env.SSL_CERT || "/etc/ssl/certs/cert.pem";
-const keyPath = process.env.SSL_KEY || "/etc/ssl/private/key.pem";
+const certPath =
+  process.env.SSL_CERT ||
+  "/etc/letsencrypt/live/sendmaster.masterbrainssolutions.com/fullchain.pem";
+const keyPath =
+  process.env.SSL_KEY ||
+  "/etc/letsencrypt/live/sendmaster.masterbrainssolutions.com/privkey.pem";
 
 let server;
 
