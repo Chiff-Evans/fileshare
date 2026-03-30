@@ -1078,12 +1078,13 @@
       let myPeerId = null;
       let mode = "send";
 
-      // PeerJS server config - UPDATE THIS with your deployed server URL
+      // PeerJS server config - dynamically detect HTTPS and domain
+      const isSecure = window.location.protocol === "https:";
       const peerConfig = {
-        host: "localhost", // Replace with your deployed server domain
-        secure: false,
-        port: 9999,
-        path: "/peerjs",
+        host: window.location.hostname, // Use same domain as the page
+        secure: isSecure, // Use HTTPS if page is HTTPS
+        port: isSecure ? 443 : 9999, // Use port 443 for HTTPS, 9999 for HTTP
+        path: "/",
         debug: 0,
       };
 
