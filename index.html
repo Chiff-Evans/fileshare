@@ -1068,8 +1068,7 @@
       </div>
     </div>
 
-    <!-- QR Script (QR code generator) -->
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <!-- QR Code generation via API (qrserver.com) -->
 
     <script>
       // ─── State ───────────────────────────────────────────────────────────────────
@@ -1194,23 +1193,33 @@
           const url = `${window.location.origin}${window.location.pathname}?peer=${id}`;
           document.getElementById("shareLinkInput").value = url;
 
-          // Generate QR (with delay to ensure library is loaded)
+          // Generate QR using API service
           setTimeout(() => {
             try {
-              if (typeof QRCode !== "undefined") {
-                const canvas = document.getElementById("qrCanvas");
-                QRCode.toCanvas(canvas, url, {
-                  width: 76,
-                  margin: 1,
-                  color: { dark: "#000", light: "#fff" },
-                });
-              }
+              const canvas = document.getElementById("qrCanvas");
+              const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+
+              // Create an image and convert to canvas
+              const img = new Image();
+              img.crossOrigin = "anonymous";
+              img.onload = function () {
+                const ctx = canvas.getContext("2d");
+                canvas.width = 200;
+                canvas.height = 200;
+                ctx.drawImage(img, 0, 0, 200, 200);
+              };
+              img.onerror = function () {
+                console.error("QR API failed to load");
+                const qrBox = document.getElementById("qrBox");
+                qrBox.innerHTML =
+                  '<div style="font-size: 0.75rem; color: #999; text-align: center; padding: 20px;">QR unavailable</div>';
+              };
+              img.src = qrApiUrl;
             } catch (e) {
-              console.error("QR generation failed", e);
-              // Show a fallback message instead
+              console.error("QR generation error", e);
               const qrBox = document.getElementById("qrBox");
               qrBox.innerHTML =
-                '<div style="font-size: 0.75rem; color: #999;">QR unavailable</div>';
+                '<div style="font-size: 0.75rem; color: #999; text-align: center; padding: 20px;">QR unavailable</div>';
             }
           }, 100);
 
