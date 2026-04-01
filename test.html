@@ -1,0 +1,245 @@
+<!doctype html>
+<html>
+  <head>
+    <title>SendMaster — Server Test</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        max-width: 640px;
+        margin: 40px auto;
+        padding: 0 20px;
+        background: #0a0a0f;
+        color: #f0f0f8;
+      }
+      h1 {
+        font-size: 1.4rem;
+        margin-bottom: 6px;
+      }
+      p {
+        color: #aaa;
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+      }
+      button {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: opacity 0.2s;
+      }
+      button:hover {
+        opacity: 0.85;
+      }
+      #openBtn {
+        background: #6c63ff;
+        color: #fff;
+      }
+      #testBtn {
+        background: #1c1c28;
+        color: #f0f0f8;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      #peerBtn {
+        background: #1c1c28;
+        color: #f0f0f8;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      .card {
+        background: #13131a;
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        border-radius: 14px;
+        padding: 20px;
+        margin-bottom: 16px;
+      }
+      .card h2 {
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #6b6b80;
+        margin-bottom: 12px;
+      }
+      .ok {
+        color: #43e97b;
+      }
+      .err {
+        color: #ff6584;
+      }
+      .warn {
+        color: #ffa500;
+      }
+      pre {
+        background: #0a0a0f;
+        border: 1px solid rgba(255, 255, 255, 0.07);
+        padding: 14px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        overflow-x: auto;
+        color: #ccc;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      code {
+        background: #1c1c28;
+        padding: 2px 6px;
+        border-radius: 5px;
+        font-size: 0.85rem;
+        color: #9b8eff;
+      }
+      .dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 6px;
+      }
+      .dot.green {
+        background: #43e97b;
+      }
+      .dot.red {
+        background: #ff6584;
+      }
+      .dot.spin {
+        background: #6c63ff;
+        animation: pulse 1s infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+      #serverUrl {
+        color: #9b8eff;
+        font-size: 0.85rem;
+        margin-bottom: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SendMaster — Server Diagnostics</h1>
+    <p>
+      Tests the PeerJS signaling server and WebRTC peer connection from this
+      browser.
+    </p>
+
+    <div id="serverUrl"></div>
+
+    <div class="row">
+      <button id="openBtn" onclick="openApp()">Open App</button>
+      <button id="testBtn" onclick="testServer()">Test Health</button>
+      <button id="peerBtn" onclick="testPeer()">Test Peer Connection</button>
+    </div>
+
+    <div class="card" id="healthCard" style="display: none">
+      <h2>Health Check</h2>
+      <div id="healthResult"></div>
+    </div>
+
+    <div class="card" id="peerCard" style="display: none">
+      <h2>Peer Connection Test</h2>
+      <div id="peerResult"></div>
+    </div>
+
+    <div class="card">
+      <h2>Config</h2>
+      <pre id="configBlock"></pre>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
+    <script>
+      // Same origin — server serves both the HTML and PeerJS on the same host/port
+      const BASE_URL = window.location.origin;
+      const isSecure = window.location.protocol === "https:";
+      const peerPort = window.location.port
+        ? parseInt(window.location.port, 10)
+        : isSecure
+          ? 443
+          : 80;
+
+      const peerConfig = {
+        host: window.location.hostname,
+        secure: isSecure,
+        port: peerPort,
+        path: "/peerjs",
+        debug: 0,
+      };
+
+      document.getElementById("serverUrl").textContent =
+        "Connecting to: " + BASE_URL;
+      document.getElementById("configBlock").textContent = JSON.stringify(
+        peerConfig,
+        null,
+        2,
+      );
+
+      function openApp() {
+        window.open("index.html", "_blank");
+      }
+
+      async function testServer() {
+        const card = document.getElementById("healthCard");
+        const result = document.getElementById("healthResult");
+        card.style.display = "block";
+        result.innerHTML = '<span class="dot spin"></span> Testing…';
+        try {
+          const t0 = performance.now();
+          const res = await fetch(`${BASE_URL}/health`);
+          const ms = Math.round(performance.now() - t0);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          result.innerHTML = `
+            <p class="ok"><span class="dot green"></span>Server is healthy — ${ms}ms</p>
+            <pre>${JSON.stringify(data, null, 2)}</pre>`;
+        } catch (err) {
+          result.innerHTML = `
+            <p class="err"><span class="dot red"></span>Health check failed: ${err.message}</p>
+            <p class="warn">Make sure the server is running: <code>node server.js</code> or <code>pm2 start server.js</code></p>`;
+        }
+      }
+
+      function testPeer() {
+        const card = document.getElementById("peerCard");
+        const result = document.getElementById("peerResult");
+        card.style.display = "block";
+        result.innerHTML =
+          '<span class="dot spin"></span> Connecting to PeerJS server…';
+
+        const peer = new Peer(peerConfig);
+        const timeout = setTimeout(() => {
+          peer.destroy();
+          result.innerHTML = `<p class="err"><span class="dot red"></span>Timed out — could not reach PeerJS server.</p>`;
+        }, 8000);
+
+        peer.on("open", (id) => {
+          clearTimeout(timeout);
+          result.innerHTML = `
+            <p class="ok"><span class="dot green"></span>PeerJS connected!</p>
+            <p>Your peer ID: <code>${id}</code></p>
+            <p style="color:#aaa;font-size:0.85rem">WebRTC signaling is working. File transfers should work on this device.</p>`;
+          setTimeout(() => peer.destroy(), 3000);
+        });
+
+        peer.on("error", (err) => {
+          clearTimeout(timeout);
+          result.innerHTML = `
+            <p class="err"><span class="dot red"></span>Peer error: ${err.type} — ${err.message}</p>
+            <pre>${JSON.stringify(peerConfig, null, 2)}</pre>`;
+        });
+      }
+
+      // Auto-run health test on load
+      testServer();
+    </script>
+  </body>
+</html>
