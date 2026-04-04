@@ -1068,8 +1068,7 @@
       </div>
     </div>
 
-    <!-- QR Script (simple generator) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode/1.5.3/qrcode.min.js"></script>
+    <!-- QR Code generation via API (qrserver.com) -->
 
     <script>
       // ─── State ───────────────────────────────────────────────────────────────────
@@ -1079,14 +1078,79 @@
       let myPeerId = null;
       let mode = "send";
 
-      // PeerJS server config - UPDATE THIS with your deployed server URL
-      const peerConfig = {
-        host: "https://sendmaster.masterbrainssolutions.com", // Replace with your deployed server domain
-        secure: true,
-        port: 443,
-        path: "/peerjs",
-        debug: 0,
-      };
+      // ─── PeerJS config (loaded from server so port is always correct) ────────────
+      let peerConfig = null;
+
+      async function loadPeerConfig() {
+        try {
+          const res = await fetch("/config.json");
+          const cfg = await res.json();
+          peerConfig = {
+            host: cfg.peerHost || window.location.hostname,
+            secure: cfg.secure,
+            port: cfg.peerPort,
+            path: cfg.peerPath || "/peerjs",
+            debug: 0,
+            config: {
+              iceServers: [
+                { urls: "stun:stun.l.google.com:19302" },
+                { urls: "stun:stun1.l.google.com:19302" },
+                // TURN via raw IP (always works) + domain (works once DNS resolves)
+                {
+                  urls: "turn:31.97.199.20:3478",
+                  username: "sendmaster",
+                  credential: "1A2b3c@4d5e6f",
+                },
+                {
+                  urls: "turn:sendmaster.masterbrainssolutions.com:3478",
+                  username: "sendmaster",
+                  credential: "1A2b3c@4d5e6f",
+                },
+                {
+                  urls: "turns:sendmaster.masterbrainssolutions.com:5349",
+                  username: "sendmaster",
+                  credential: "1A2b3c@4d5e6f",
+                },
+              ],
+            },
+          };
+        } catch (e) {
+          const isSecure = window.location.protocol === "https:";
+          const port = window.location.port
+            ? parseInt(window.location.port, 10)
+            : window.location.hostname === "localhost"
+              ? 9999
+              : isSecure
+                ? 443
+                : 80;
+          peerConfig = {
+            host: window.location.hostname,
+            secure: isSecure,
+            port: port,
+            path: "/peerjs",
+            debug: 0,
+            config: {
+              iceServers: [
+                { urls: "stun:stun.l.google.com:19302" },
+                {
+                  urls: "turn:sendmaster.masterbrainssolutions.com:3478",
+                  username: "sendmaster",
+                  credential: "1A2b3c@4d5e6f",
+                },
+                {
+                  urls: "turns:sendmaster.masterbrainssolutions.com:5349",
+                  username: "sendmaster",
+                  credential: "1A2b3c@4d5e6f",
+                },
+              ],
+            },
+          };
+        }
+      }
+
+      // Call this before any Peer() constructor — wrap generateShareLink and
+      // connectToPeer so they await loadPeerConfig() if peerConfig is still null:
+      //   await loadPeerConfig();   ← add as first line of both functions if needed
 
       // Chunk size for chunked transfer
       const CHUNK_SIZE = 64 * 1024; // 64KB
@@ -1194,17 +1258,35 @@
           const url = `${window.location.origin}${window.location.pathname}?peer=${id}`;
           document.getElementById("shareLinkInput").value = url;
 
-          // Generate QR
-          try {
-            const canvas = document.getElementById("qrCanvas");
-            QRCode.toCanvas(canvas, url, {
-              width: 76,
-              margin: 1,
-              color: { dark: "#000", light: "#fff" },
-            });
-          } catch (e) {
-            console.error("QR generation failed", e);
-          }
+          // Generate QR using API service
+          setTimeout(() => {
+            try {
+              const canvas = document.getElementById("qrCanvas");
+              const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+
+              // Create an image and convert to canvas
+              const img = new Image();
+              img.crossOrigin = "anonymous";
+              img.onload = function () {
+                const ctx = canvas.getContext("2d");
+                canvas.width = 200;
+                canvas.height = 200;
+                ctx.drawImage(img, 0, 0, 200, 200);
+              };
+              img.onerror = function () {
+                console.error("QR API failed to load");
+                const qrBox = document.getElementById("qrBox");
+                qrBox.innerHTML =
+                  '<div style="font-size: 0.75rem; color: #999; text-align: center; padding: 20px;">QR unavailable</div>';
+              };
+              img.src = qrApiUrl;
+            } catch (e) {
+              console.error("QR generation error", e);
+              const qrBox = document.getElementById("qrBox");
+              qrBox.innerHTML =
+                '<div style="font-size: 0.75rem; color: #999; text-align: center; padding: 20px;">QR unavailable</div>';
+            }
+          }, 100);
 
           document.getElementById("shareSection").classList.remove("hidden");
           document.getElementById("generateSection").classList.add("hidden");
