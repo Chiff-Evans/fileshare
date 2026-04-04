@@ -19,6 +19,16 @@ const app = express();
 // Serve static files (index.html, test.html, etc.)
 app.use(express.static(path.join(__dirname)));
 
+// Client config — tells the browser which port/host to use for PeerJS
+app.get("/config.json", (req, res) => {
+  res.json({
+    peerHost: process.env.PEER_HOST || null, // e.g. "sendmaster.masterbrainssolutions.com"
+    peerPort: parseInt(process.env.PORT || PORT, 10),
+    peerPath: "/peerjs",
+    secure: useHttps,
+  });
+});
+
 // Health check endpoint
 app.get("/health", (req, res) => {
   res.json({
@@ -65,5 +75,18 @@ peerServer.on("disconnect", (client) => {
 server.listen(PORT, () => {
   console.log(`PeerJS endpoint: /peerjs`);
   console.log(`Health check:    /health`);
-  console.log(`App served at:   /`);
+  console.log(
+    `App served at:   http${useHttps ? "s" : ""}://localhost:${PORT}`,
+  );
+});
+
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(`\n❌  Port ${PORT} is already in use.`);
+    console.error(`    Run:  netstat -ano | findstr :${PORT}`);
+    console.error(`    Then: taskkill /PID <pid> /F\n`);
+  } else {
+    console.error("Server error:", err);
+  }
+  process.exit(1);
 });

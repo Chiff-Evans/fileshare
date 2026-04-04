@@ -1,7 +1,7 @@
 <!doctype html>
 <html>
   <head>
-    <title>SendMaster — Server Test</title>
+    <title>SendMaster - Server Test</title>
     <style>
       body {
         font-family: sans-serif;
@@ -158,30 +158,52 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
     <script>
-      // Same origin — server serves both the HTML and PeerJS on the same host/port
-      const BASE_URL = window.location.origin;
-      const isSecure = window.location.protocol === "https:";
-      const peerPort = window.location.port
-        ? parseInt(window.location.port, 10)
-        : isSecure
-          ? 443
-          : 80;
+      let peerConfig = null;
+      let BASE_URL = window.location.origin;
 
-      const peerConfig = {
-        host: window.location.hostname,
-        secure: isSecure,
-        port: peerPort,
-        path: "/peerjs",
-        debug: 0,
-      };
+      async function loadConfig() {
+        try {
+          const res = await fetch("/config.json");
+          const cfg = await res.json();
+          const host = cfg.peerHost || window.location.hostname;
+          BASE_URL = `${cfg.secure ? "https" : "http"}://${host}:${cfg.peerPort}`;
+          peerConfig = {
+            host: host,
+            secure: cfg.secure,
+            port: cfg.peerPort,
+            path: cfg.peerPath || "/peerjs",
+            debug: 0,
+          };
+        } catch (e) {
+          // Fallback: read port from URL or default to 9999 for local dev
+          const isSecure = window.location.protocol === "https:";
+          const port = window.location.port
+            ? parseInt(window.location.port, 10)
+            : window.location.hostname === "localhost"
+              ? 9999
+              : isSecure
+                ? 443
+                : 80;
+          peerConfig = {
+            host: window.location.hostname,
+            secure: isSecure,
+            port: port,
+            path: "/peerjs",
+            debug: 0,
+          };
+          BASE_URL = `${isSecure ? "https" : "http"}://${window.location.hostname}:${port}`;
+        }
+        document.getElementById("serverUrl").textContent =
+          "Connecting to: " + BASE_URL;
+        document.getElementById("configBlock").textContent = JSON.stringify(
+          peerConfig,
+          null,
+          2,
+        );
+      }
 
-      document.getElementById("serverUrl").textContent =
-        "Connecting to: " + BASE_URL;
-      document.getElementById("configBlock").textContent = JSON.stringify(
-        peerConfig,
-        null,
-        2,
-      );
+      // Boot: load config then auto-test
+      loadConfig().then(() => testServer());
 
       function openApp() {
         window.open("index.html", "_blank");
@@ -238,8 +260,7 @@
         });
       }
 
-      // Auto-run health test on load
-      testServer();
+      // Boot is handled above via loadConfig().then(testServer)
     </script>
   </body>
 </html>
