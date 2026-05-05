@@ -1095,31 +1095,26 @@
           ];
           try {
             const res = await fetch("/config.json");
+            if (!res.ok) throw new Error("config.json " + res.status);
             const cfg = await res.json();
             peerConfig = {
               host: cfg.peerHost || window.location.hostname,
               secure: !!cfg.secure,
               port: cfg.peerPort,
-              path: cfg.peerPath || "/peerjs",
+              path: cfg.peerPath || "/",
               debug: 0,
               config: { iceServers },
             };
           } catch (e) {
-            const isSecure = window.location.protocol === "https:";
-            const port = window.location.port
-              ? parseInt(window.location.port, 10)
-              : window.location.hostname === "localhost" ? 9999 : isSecure ? 443 : 80;
-            peerConfig = {
-              host: window.location.hostname,
-              secure: isSecure,
-              port,
-              path: "/peerjs",
-              debug: 0,
-              config: { iceServers },
-            };
+            // Server not running — fall back to PeerJS cloud service
+            peerConfig = null;
           }
         })();
         return peerConfigPromise;
+      }
+
+      function makePeer() {
+        return peerConfig ? new Peer(peerConfig) : new Peer();
       }
 
       // Chunk size and backpressure threshold
@@ -1237,7 +1232,7 @@
         await loadPeerConfig();
 
         if (peer) peer.destroy();
-        peer = new Peer(peerConfig);
+        peer = makePeer();
 
         peer.on("open", (id) => {
           myPeerId = id;
@@ -1394,7 +1389,7 @@
         await loadPeerConfig();
 
         if (peer) peer.destroy();
-        peer = new Peer(peerConfig);
+        peer = makePeer();
 
         peer.on("open", () => {
           conn = peer.connect(targetId, { reliable: true });
