@@ -1077,83 +1077,54 @@
       let selectedFiles = [];
       let myPeerId = null;
       let mode = "send";
+      let isTransferring = false;
 
-      // ─── PeerJS config (loaded from server so port is always correct) ────────────
+      // ─── PeerJS config ────────────────────────────────────────────────────────────
       let peerConfig = null;
+      let peerConfigPromise = null;
 
-      async function loadPeerConfig() {
-        try {
-          const res = await fetch("/config.json");
-          const cfg = await res.json();
-          peerConfig = {
-            host: cfg.peerHost || window.location.hostname,
-            secure: cfg.secure,
-            port: cfg.peerPort,
-            path: cfg.peerPath || "/peerjs",
-            debug: 0,
-            config: {
-              iceServers: [
-                { urls: "stun:stun.l.google.com:19302" },
-                { urls: "stun:stun1.l.google.com:19302" },
-                // TURN via raw IP (always works) + domain (works once DNS resolves)
-                {
-                  urls: "turn:31.97.199.20:3478",
-                  username: "sendmaster",
-                  credential: "1A2b3c@4d5e6f",
-                },
-                {
-                  urls: "turn:sendmaster.masterbrainssolutions.com:3478",
-                  username: "sendmaster",
-                  credential: "1A2b3c@4d5e6f",
-                },
-                {
-                  urls: "turns:sendmaster.masterbrainssolutions.com:5349",
-                  username: "sendmaster",
-                  credential: "1A2b3c@4d5e6f",
-                },
-              ],
-            },
-          };
-        } catch (e) {
-          const isSecure = window.location.protocol === "https:";
-          const port = window.location.port
-            ? parseInt(window.location.port, 10)
-            : window.location.hostname === "localhost"
-              ? 9999
-              : isSecure
-                ? 443
-                : 80;
-          peerConfig = {
-            host: window.location.hostname,
-            secure: isSecure,
-            port: port,
-            path: "/peerjs",
-            debug: 0,
-            config: {
-              iceServers: [
-                { urls: "stun:stun.l.google.com:19302" },
-                {
-                  urls: "turn:sendmaster.masterbrainssolutions.com:3478",
-                  username: "sendmaster",
-                  credential: "1A2b3c@4d5e6f",
-                },
-                {
-                  urls: "turns:sendmaster.masterbrainssolutions.com:5349",
-                  username: "sendmaster",
-                  credential: "1A2b3c@4d5e6f",
-                },
-              ],
-            },
-          };
-        }
+      function loadPeerConfig() {
+        if (peerConfigPromise) return peerConfigPromise;
+        peerConfigPromise = (async () => {
+          const iceServers = [
+            { urls: "stun:stun.l.google.com:19302" },
+            { urls: "stun:stun1.l.google.com:19302" },
+            { urls: "turn:31.97.199.20:3478", username: "sendmaster", credential: "1A2b3c@4d5e6f" },
+            { urls: "turn:sendmaster.masterbrainssolutions.com:3478", username: "sendmaster", credential: "1A2b3c@4d5e6f" },
+            { urls: "turns:sendmaster.masterbrainssolutions.com:5349", username: "sendmaster", credential: "1A2b3c@4d5e6f" },
+          ];
+          try {
+            const res = await fetch("/config.json");
+            const cfg = await res.json();
+            peerConfig = {
+              host: cfg.peerHost || window.location.hostname,
+              secure: !!cfg.secure,
+              port: cfg.peerPort,
+              path: cfg.peerPath || "/peerjs",
+              debug: 0,
+              config: { iceServers },
+            };
+          } catch (e) {
+            const isSecure = window.location.protocol === "https:";
+            const port = window.location.port
+              ? parseInt(window.location.port, 10)
+              : window.location.hostname === "localhost" ? 9999 : isSecure ? 443 : 80;
+            peerConfig = {
+              host: window.location.hostname,
+              secure: isSecure,
+              port,
+              path: "/peerjs",
+              debug: 0,
+              config: { iceServers },
+            };
+          }
+        })();
+        return peerConfigPromise;
       }
 
-      // Call this before any Peer() constructor — wrap generateShareLink and
-      // connectToPeer so they await loadPeerConfig() if peerConfig is still null:
-      //   await loadPeerConfig();   ← add as first line of both functions if needed
-
-      // Chunk size for chunked transfer
-      const CHUNK_SIZE = 64 * 1024; // 64KB
+      // Chunk size and backpressure threshold
+      const CHUNK_SIZE = 64 * 1024; // 64 KB
+      const BUFFER_THRESHOLD = 512 * 1024; // pause sending when WebRTC buffer exceeds 512 KB
 
       // ─── Drag & Drop ─────────────────────────────────────────────────────────────
       const dropZone = document.getElementById("dropZone");
@@ -1161,9 +1132,7 @@
         e.preventDefault();
         dropZone.classList.add("dragover");
       });
-      dropZone.addEventListener("dragleave", () =>
-        dropZone.classList.remove("dragover"),
-      );
+      dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
       dropZone.addEventListener("drop", (e) => {
         e.preventDefault();
         dropZone.classList.remove("dragover");
@@ -1173,20 +1142,11 @@
       // ─── Mode switch ─────────────────────────────────────────────────────────────
       function switchMode(m) {
         mode = m;
-        document
-          .getElementById("sendPanel")
-          .classList.toggle("hidden", m !== "send");
-        document
-          .getElementById("receivePanel")
-          .classList.toggle("hidden", m !== "receive");
-        document
-          .getElementById("sendTab")
-          .classList.toggle("active", m === "send");
-        document
-          .getElementById("receiveTab")
-          .classList.toggle("active", m === "receive");
+        document.getElementById("sendPanel").classList.toggle("hidden", m !== "send");
+        document.getElementById("receivePanel").classList.toggle("hidden", m !== "receive");
+        document.getElementById("sendTab").classList.toggle("active", m === "send");
+        document.getElementById("receiveTab").classList.toggle("active", m === "receive");
 
-        // Auto-read peer id from URL on receive mode
         if (m === "receive") {
           const params = new URLSearchParams(window.location.search);
           const pid = params.get("peer");
@@ -1200,9 +1160,7 @@
       // ─── File handling ────────────────────────────────────────────────────────────
       function handleFiles(files) {
         for (const f of files) {
-          if (
-            !selectedFiles.find((x) => x.name === f.name && x.size === f.size)
-          ) {
+          if (!selectedFiles.find((x) => x.name === f.name && x.size === f.size)) {
             selectedFiles.push(f);
           }
         }
@@ -1216,20 +1174,30 @@
           const ext = f.name.split(".").pop().slice(0, 4) || "?";
           const div = document.createElement("div");
           div.className = "file-item";
-          div.innerHTML = `
-      <div class="file-icon">${ext}</div>
-      <div class="file-info">
-        <div class="file-name">${f.name}</div>
-        <div class="file-size">${fmtSize(f.size)}</div>
-      </div>
-      <button class="file-remove" onclick="removeFile(${i})">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>`;
+
+          const iconEl = document.createElement("div");
+          iconEl.className = "file-icon";
+          iconEl.textContent = ext;
+
+          const infoEl = document.createElement("div");
+          infoEl.className = "file-info";
+          const nameEl = document.createElement("div");
+          nameEl.className = "file-name";
+          nameEl.textContent = f.name;
+          const sizeEl = document.createElement("div");
+          sizeEl.className = "file-size";
+          sizeEl.textContent = fmtSize(f.size);
+          infoEl.append(nameEl, sizeEl);
+
+          const removeBtn = document.createElement("button");
+          removeBtn.className = "file-remove";
+          removeBtn.onclick = () => removeFile(i);
+          removeBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>`;
+
+          div.append(iconEl, infoEl, removeBtn);
           list.appendChild(div);
         });
-        document
-          .getElementById("generateSection")
-          .classList.toggle("hidden", selectedFiles.length === 0);
+        document.getElementById("generateSection").classList.toggle("hidden", selectedFiles.length === 0);
       }
 
       function removeFile(i) {
@@ -1240,16 +1208,34 @@
       function fmtSize(bytes) {
         if (bytes < 1024) return bytes + " B";
         if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-        if (bytes < 1024 * 1024 * 1024)
-          return (bytes / 1024 / 1024).toFixed(1) + " MB";
+        if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + " MB";
         return (bytes / 1024 / 1024 / 1024).toFixed(2) + " GB";
       }
 
+      function fmtSpeed(bps) {
+        if (bps < 1024) return bps.toFixed(0) + " B/s";
+        if (bps < 1024 * 1024) return (bps / 1024).toFixed(1) + " KB/s";
+        return (bps / 1024 / 1024).toFixed(1) + " MB/s";
+      }
+
+      function fmtTime(secs) {
+        if (!isFinite(secs) || secs <= 0) return "";
+        if (secs < 60) return Math.round(secs) + "s";
+        if (secs < 3600) return Math.floor(secs / 60) + "m " + Math.round(secs % 60) + "s";
+        return Math.floor(secs / 3600) + "h " + Math.round((secs % 3600) / 60) + "m";
+      }
+
       // ─── Peer setup (sender) ──────────────────────────────────────────────────────
-      function generateShareLink() {
+      async function generateShareLink() {
         if (selectedFiles.length === 0) return;
 
-        // Destroy old peer
+        const btn = document.getElementById("generateBtn");
+        const originalHTML = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = `<div class="spinner"></div> Connecting…`;
+
+        await loadPeerConfig();
+
         if (peer) peer.destroy();
         peer = new Peer(peerConfig);
 
@@ -1258,101 +1244,96 @@
           const url = `${window.location.origin}${window.location.pathname}?peer=${id}`;
           document.getElementById("shareLinkInput").value = url;
 
-          // Generate QR using API service
-          setTimeout(() => {
-            try {
-              const canvas = document.getElementById("qrCanvas");
-              const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
-
-              // Create an image and convert to canvas
-              const img = new Image();
-              img.crossOrigin = "anonymous";
-              img.onload = function () {
-                const ctx = canvas.getContext("2d");
-                canvas.width = 200;
-                canvas.height = 200;
-                ctx.drawImage(img, 0, 0, 200, 200);
-              };
-              img.onerror = function () {
-                console.error("QR API failed to load");
-                const qrBox = document.getElementById("qrBox");
-                qrBox.innerHTML =
-                  '<div style="font-size: 0.75rem; color: #999; text-align: center; padding: 20px;">QR unavailable</div>';
-              };
-              img.src = qrApiUrl;
-            } catch (e) {
-              console.error("QR generation error", e);
-              const qrBox = document.getElementById("qrBox");
-              qrBox.innerHTML =
-                '<div style="font-size: 0.75rem; color: #999; text-align: center; padding: 20px;">QR unavailable</div>';
-            }
-          }, 100);
+          try {
+            const canvas = document.getElementById("qrCanvas");
+            const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(url)}`;
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = () => {
+              const ctx = canvas.getContext("2d");
+              canvas.width = 200;
+              canvas.height = 200;
+              ctx.drawImage(img, 0, 0, 200, 200);
+            };
+            img.onerror = () => {
+              document.getElementById("qrBox").innerHTML =
+                '<div style="font-size:0.75rem;color:#999;text-align:center;padding:20px">QR unavailable</div>';
+            };
+            img.src = qrApiUrl;
+          } catch (e) {
+            document.getElementById("qrBox").innerHTML =
+              '<div style="font-size:0.75rem;color:#999;text-align:center;padding:20px">QR unavailable</div>';
+          }
 
           document.getElementById("shareSection").classList.remove("hidden");
           document.getElementById("generateSection").classList.add("hidden");
           setSenderStatus("waiting", "Waiting for receiver to connect…");
+
+          btn.disabled = false;
+          btn.innerHTML = originalHTML;
         });
 
         peer.on("connection", (c) => {
           conn = c;
-          setSenderStatus(
-            "connected",
-            "Receiver connected! Starting transfer…",
-          );
-
-          conn.on("open", () => {
-            sendFiles();
-          });
-
-          conn.on("error", (e) =>
-            setSenderStatus("error", "Connection error: " + e.message),
-          );
+          setSenderStatus("connected", "Receiver connected! Starting transfer…");
+          conn.on("open", () => sendFiles());
+          conn.on("error", (e) => setSenderStatus("error", "Connection error: " + e.message));
         });
 
-        peer.on("error", (e) =>
-          setSenderStatus("error", "Error: " + e.message),
-        );
+        peer.on("error", (e) => {
+          setSenderStatus("error", "Error: " + e.message);
+          btn.disabled = false;
+          btn.innerHTML = originalHTML;
+        });
       }
 
-      // ─── File sending (chunked) ───────────────────────────────────────────────────
+      // ─── File sending (chunked, with backpressure and speed tracking) ─────────────
       async function sendFiles() {
         if (!conn || selectedFiles.length === 0) return;
+        isTransferring = true;
 
-        // Send manifest
-        const manifest = selectedFiles.map((f) => ({
-          name: f.name,
-          size: f.size,
-          type: f.type,
-        }));
-        conn.send({ type: "manifest", files: manifest });
+        conn.send({ type: "manifest", files: selectedFiles.map((f) => ({ name: f.name, size: f.size, type: f.type })) });
 
-        setSenderStatus(
-          "transferring",
-          `Sending ${selectedFiles.length} file(s)…`,
-        );
+        setSenderStatus("transferring", `Sending ${selectedFiles.length} file(s)…`);
         showProgress(true);
 
-        let totalBytes = selectedFiles.reduce((a, f) => a + f.size, 0);
+        const totalBytes = selectedFiles.reduce((a, f) => a + f.size, 0);
         let sentBytes = 0;
+        let speedSampleTime = Date.now();
+        let speedSampleBytes = 0;
+        let currentSpeed = 0;
 
         for (let fi = 0; fi < selectedFiles.length; fi++) {
           const file = selectedFiles[fi];
-          const reader = new FileReader();
-
           conn.send({ type: "file-start", index: fi });
 
-          // Send in chunks
           let offset = 0;
           while (offset < file.size) {
             const slice = file.slice(offset, offset + CHUNK_SIZE);
             const buf = await readChunk(slice);
+
+            // Backpressure: wait if the WebRTC send buffer is too full
+            while (conn.dataChannel && conn.dataChannel.bufferedAmount > BUFFER_THRESHOLD) {
+              await new Promise((r) => setTimeout(r, 20));
+            }
+
             conn.send({ type: "chunk", index: fi, data: buf, offset });
             offset += buf.byteLength;
             sentBytes += buf.byteLength;
 
+            // Update speed every 500 ms
+            const now = Date.now();
+            if (now - speedSampleTime >= 500) {
+              currentSpeed = (sentBytes - speedSampleBytes) / ((now - speedSampleTime) / 1000);
+              speedSampleTime = now;
+              speedSampleBytes = sentBytes;
+            }
+
             const pct = Math.round((sentBytes / totalBytes) * 100);
-            updateProgress(pct, `Sending: ${file.name}`);
-            // Small yield
+            const eta = currentSpeed > 0 ? fmtTime((totalBytes - sentBytes) / currentSpeed) : "";
+            const speedStr = currentSpeed > 0 ? `${fmtSpeed(currentSpeed)}${eta ? " · ETA " + eta : ""}` : "";
+            updateProgress(pct, file.name + (speedStr ? " · " + speedStr : ""));
+
             await new Promise((r) => setTimeout(r, 0));
           }
 
@@ -1360,10 +1341,8 @@
         }
 
         conn.send({ type: "done" });
-        setSenderStatus(
-          "connected",
-          `✓ Transfer complete — ${selectedFiles.length} file(s) sent`,
-        );
+        isTransferring = false;
+        setSenderStatus("connected", `✓ Transfer complete — ${selectedFiles.length} file(s) sent`);
         updateProgress(100, "Complete!");
       }
 
@@ -1379,65 +1358,62 @@
       // ─── Receiver ─────────────────────────────────────────────────────────────────
       let rxBuffers = {};
       let rxManifest = [];
+      let rxBytesReceived = 0;
+      let rxTotalBytes = 0;
+      let rxSpeedSampleTime = 0;
+      let rxSpeedSampleBytes = 0;
+      let rxCurrentSpeed = 0;
+      let allReceivedFiles = [];
 
       function checkCodeInput() {
         const val = document.getElementById("peerCodeInput").value.trim();
         document.getElementById("connectBtn").disabled = val.length < 4;
       }
 
-      function connectToPeer() {
+      async function connectToPeer() {
         let raw = document.getElementById("peerCodeInput").value.trim();
-
         let targetId = null;
 
-        // Extract peer id from URL if pasted as full link
         try {
           const url = new URL(raw);
           const pid = url.searchParams.get("peer");
-          if (pid) {
-            targetId = pid;
-          }
+          if (pid) targetId = pid;
         } catch (e) {}
 
-        // If no peer ID from URL, try to extract UUID from raw input
         if (!targetId) {
-          const uuidMatch = raw.match(
-            /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i,
-          );
-          if (uuidMatch) {
-            targetId = uuidMatch[0];
-          } else {
-            targetId = raw; // fallback
-          }
+          const uuidMatch = raw.match(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i);
+          targetId = uuidMatch ? uuidMatch[0] : raw;
         }
 
         if (!targetId) return;
 
         setReceiverStatus("waiting", "Connecting to sender…");
-        document.getElementById("connectBtn").disabled = true;
+        const connectBtn = document.getElementById("connectBtn");
+        connectBtn.disabled = true;
+
+        await loadPeerConfig();
 
         if (peer) peer.destroy();
         peer = new Peer(peerConfig);
 
-        peer.on("open", (myId) => {
+        peer.on("open", () => {
           conn = peer.connect(targetId, { reliable: true });
-
-          conn.on("open", () => {
-            setReceiverStatus("connected", "Connected! Waiting for files…");
-          });
-
+          conn.on("open", () => setReceiverStatus("connected", "Connected! Waiting for files…"));
           conn.on("data", handleReceivedData);
-          conn.on("error", (e) =>
-            setReceiverStatus("error", "Connection error: " + e.message),
-          );
-          conn.on("close", () =>
-            setReceiverStatus("waiting", "Connection closed."),
-          );
+          conn.on("error", (e) => {
+            setReceiverStatus("error", "Connection error: " + e.message);
+            connectBtn.disabled = false;
+          });
+          conn.on("close", () => setReceiverStatus("waiting", "Connection closed."));
         });
 
         peer.on("error", (e) => {
-          setReceiverStatus("error", "Could not connect: " + e.message);
-          document.getElementById("connectBtn").disabled = false;
+          const msg =
+            e.type === "peer-unavailable" ? "Sender not found — the link may have expired." :
+            e.type === "network" ? "Network error — check your connection." :
+            "Could not connect: " + e.message;
+          setReceiverStatus("error", msg);
+          connectBtn.disabled = false;
         });
       }
 
@@ -1445,39 +1421,48 @@
         if (data.type === "manifest") {
           rxManifest = data.files;
           rxBuffers = {};
+          rxBytesReceived = 0;
+          rxTotalBytes = data.files.reduce((a, f) => a + f.size, 0);
+          rxSpeedSampleTime = Date.now();
+          rxSpeedSampleBytes = 0;
+          rxCurrentSpeed = 0;
+          allReceivedFiles = [];
           data.files.forEach((f, i) => (rxBuffers[i] = []));
-          setReceiverStatus(
-            "transferring",
-            `Receiving ${data.files.length} file(s)…`,
-          );
+          setReceiverStatus("transferring", `Receiving ${data.files.length} file(s)…`);
           showRxProgress(true);
         }
 
         if (data.type === "chunk") {
           rxBuffers[data.index].push(data.data);
-          // Update progress estimate
-          const received = Object.values(rxBuffers)
-            .flat()
-            .reduce((a, b) => a + b.byteLength, 0);
-          const total = rxManifest.reduce((a, f) => a + f.size, 0);
-          const pct = Math.round((received / total) * 100);
-          updateRxProgress(pct, `Receiving: ${rxManifest[data.index]?.name}`);
+          rxBytesReceived += data.data.byteLength;
+
+          const now = Date.now();
+          if (now - rxSpeedSampleTime >= 500) {
+            rxCurrentSpeed = (rxBytesReceived - rxSpeedSampleBytes) / ((now - rxSpeedSampleTime) / 1000);
+            rxSpeedSampleTime = now;
+            rxSpeedSampleBytes = rxBytesReceived;
+          }
+
+          const pct = rxTotalBytes > 0 ? Math.round((rxBytesReceived / rxTotalBytes) * 100) : 0;
+          const eta = rxCurrentSpeed > 0 ? fmtTime((rxTotalBytes - rxBytesReceived) / rxCurrentSpeed) : "";
+          const speedStr = rxCurrentSpeed > 0 ? `${fmtSpeed(rxCurrentSpeed)}${eta ? " · ETA " + eta : ""}` : "";
+          const fileName = rxManifest[data.index]?.name ?? "";
+          updateRxProgress(pct, fileName + (speedStr ? " · " + speedStr : ""));
         }
 
         if (data.type === "file-end") {
           const fi = data.index;
           const meta = rxManifest[fi];
-          const chunks = rxBuffers[fi];
-          const blob = new Blob(chunks, {
-            type: meta.type || "application/octet-stream",
-          });
-          addReceivedFile(meta, blob);
+          const blob = new Blob(rxBuffers[fi], { type: meta.type || "application/octet-stream" });
           rxBuffers[fi] = [];
+          allReceivedFiles.push({ meta, blob });
+          addReceivedFile(meta, blob);
         }
 
         if (data.type === "done") {
-          setReceiverStatus("connected", `✓ All files received successfully!`);
+          setReceiverStatus("connected", "✓ All files received successfully!");
           updateRxProgress(100, "Complete!");
+          if (allReceivedFiles.length > 1) showDownloadAll();
         }
       }
 
@@ -1491,17 +1476,47 @@
 
         const div = document.createElement("div");
         div.className = "download-item";
-        div.innerHTML = `
-    <div class="file-icon">${ext}</div>
-    <div class="file-info">
-      <div class="file-name">${meta.name}</div>
-      <div class="file-size">${fmtSize(meta.size)}</div>
-    </div>
-    <a href="${url}" download="${meta.name}" class="download-btn">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Save
-    </a>`;
+
+        const iconEl = document.createElement("div");
+        iconEl.className = "file-icon";
+        iconEl.textContent = ext;
+
+        const infoEl = document.createElement("div");
+        infoEl.className = "file-info";
+        const nameEl = document.createElement("div");
+        nameEl.className = "file-name";
+        nameEl.textContent = meta.name;
+        const sizeEl = document.createElement("div");
+        sizeEl.className = "file-size";
+        sizeEl.textContent = fmtSize(meta.size);
+        infoEl.append(nameEl, sizeEl);
+
+        const downloadLink = document.createElement("a");
+        downloadLink.href = url;
+        downloadLink.download = meta.name;
+        downloadLink.className = "download-btn";
+        downloadLink.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Save`;
+
+        div.append(iconEl, infoEl, downloadLink);
         list.appendChild(div);
+      }
+
+      function showDownloadAll() {
+        if (document.getElementById("downloadAllBtn")) return;
+        const btn = document.createElement("button");
+        btn.id = "downloadAllBtn";
+        btn.className = "btn btn-primary";
+        btn.style.cssText = "margin-top:12px;width:100%;font-size:0.85rem";
+        btn.textContent = `Save All ${allReceivedFiles.length} Files`;
+        btn.onclick = () => {
+          allReceivedFiles.forEach(({ meta, blob }) => {
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = meta.name;
+            a.click();
+          });
+        };
+        document.getElementById("receivedList").after(btn);
       }
 
       // ─── UI helpers ───────────────────────────────────────────────────────────────
@@ -1528,16 +1543,13 @@
       }
 
       function showRxProgress(show) {
-        document
-          .getElementById("rxProgressWrap")
-          .classList.toggle("show", show);
+        document.getElementById("rxProgressWrap").classList.toggle("show", show);
       }
 
       function updateRxProgress(pct, label) {
         document.getElementById("rxProgressFill").style.width = pct + "%";
         document.getElementById("rxProgressPct").textContent = pct + "%";
-        document.getElementById("rxProgressLabel").textContent =
-          label || "Receiving…";
+        document.getElementById("rxProgressLabel").textContent = label || "Receiving…";
       }
 
       function copyLink() {
@@ -1558,6 +1570,7 @@
         peer = conn = null;
         selectedFiles = [];
         myPeerId = null;
+        isTransferring = false;
         renderFileList();
         document.getElementById("shareSection").classList.add("hidden");
         document.getElementById("generateSection").classList.add("hidden");
@@ -1565,11 +1578,14 @@
         document.getElementById("senderStatus").classList.remove("show");
       }
 
-      // ─── Auto-switch to receive if URL has peer param ─────────────────────────────
+      // ─── Auto-connect when URL has ?peer= ────────────────────────────────────────
       window.addEventListener("DOMContentLoaded", () => {
         const params = new URLSearchParams(window.location.search);
-        if (params.get("peer")) {
+        const peerId = params.get("peer");
+        if (peerId) {
           switchMode("receive");
+          // Auto-connect after the UI has rendered
+          setTimeout(() => connectToPeer(), 300);
         }
       });
     </script>
