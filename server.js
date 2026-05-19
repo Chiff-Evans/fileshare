@@ -14,22 +14,21 @@ const keyPath =
   process.env.SSL_KEY ||
   "/etc/letsencrypt/live/sendmaster.masterbrainssolutions.com/privkey.pem";
 
+const useHttps = fs.existsSync(certPath) && fs.existsSync(keyPath);
+
 const app = express();
 
-// Serve static files (index.html, test.html, etc.)
-app.use(express.static(path.join(__dirname)));
-
-// Client config — tells the browser which port/host to use for PeerJS
+// Dynamic routes first — before express.static so a stray file can't shadow them
 app.get("/config.json", (req, res) => {
   res.json({
-    peerHost: process.env.PEER_HOST || null, // e.g. "sendmaster.masterbrainssolutions.com"
+    peerHost: process.env.PEER_HOST || null,
     peerPort: parseInt(process.env.PORT || PORT, 10),
-    peerPath: "/peerjs",
+    // "/" means client path "/" + default key "peerjs" → URL /peerjs/id (no double segment)
+    peerPath: "/",
     secure: useHttps,
   });
 });
 
-// Health check endpoint
 app.get("/health", (req, res) => {
   res.json({
     status: "ok",
@@ -39,7 +38,8 @@ app.get("/health", (req, res) => {
   });
 });
 
-const useHttps = fs.existsSync(certPath) && fs.existsSync(keyPath);
+// Static files (index.html, favicon, etc.)
+app.use(express.static(path.join(__dirname)));
 
 let server;
 if (useHttps) {
@@ -54,7 +54,8 @@ if (useHttps) {
   console.log(`Server running on port ${PORT} with HTTP (no SSL certs found)`);
 }
 
-// Attach PeerJS to Express using ExpressPeerServer
+// PeerJS signalling server — mounted at root so client URL is /peerjs/id
+// (path "/" + default key "peerjs" = /peerjs/id, no double-segment)
 const peerServer = ExpressPeerServer(server, {
   path: "/",
   cors: {
@@ -63,7 +64,7 @@ const peerServer = ExpressPeerServer(server, {
   },
 });
 
-app.use("/peerjs", peerServer);
+app.use("/", peerServer);
 
 peerServer.on("connection", (client) => {
   console.log(`Peer connected: ${client.getId()}`);
