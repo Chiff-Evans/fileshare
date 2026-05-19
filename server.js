@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const { ExpressPeerServer } = require("peer");
 const https = require("https");
@@ -14,7 +15,7 @@ const cron = require("node-cron");
 const PORT = process.env.PORT || 9999;
 const DB_HOST = process.env.DB_HOST || "localhost";
 const DB_USER = process.env.DB_USER || "root";
-const DB_PASS = process.env.DB_PASS || "";
+const DB_PASS = process.env.DB_PASS || "1234";
 const DB_NAME = process.env.DB_NAME || "fileshare";
 
 const certPath =
@@ -84,7 +85,7 @@ async function cleanupExpired() {
   const conn = await pool.getConnection();
   try {
     const [rows] = await conn.query(
-      "SELECT id, token FROM uploads WHERE expires_at < NOW()"
+      "SELECT id, token FROM uploads WHERE expires_at < NOW()",
     );
     for (const row of rows) {
       const dir = path.join(__dirname, "uploads", row.token);
@@ -93,7 +94,10 @@ async function cleanupExpired() {
           fs.rmSync(dir, { recursive: true, force: true });
         }
       } catch (e) {
-        console.error(`Failed to remove dir for token ${row.token}:`, e.message);
+        console.error(
+          `Failed to remove dir for token ${row.token}:`,
+          e.message,
+        );
       }
     }
     if (rows.length > 0) {
@@ -172,7 +176,7 @@ app.post("/upload", prepareUpload, upload.array("files"), async (req, res) => {
       const [uploadResult] = await conn.query(
         `INSERT INTO uploads (token, expires_at, uploader_ip, total_size)
          VALUES (?, ?, ?, ?)`,
-        [token, expiresAt, uploaderIp, totalSize]
+        [token, expiresAt, uploaderIp, totalSize],
       );
       const uploadId = uploadResult.insertId;
 
@@ -186,12 +190,16 @@ app.post("/upload", prepareUpload, upload.array("files"), async (req, res) => {
             file.filename,
             file.size,
             file.mimetype || "application/octet-stream",
-          ]
+          ],
         );
       }
 
       const downloadUrl = `${req.protocol}://${req.get("host")}/d/${token}`;
-      return res.json({ token, downloadUrl, expiresAt: expiresAt.toISOString() });
+      return res.json({
+        token,
+        downloadUrl,
+        expiresAt: expiresAt.toISOString(),
+      });
     } finally {
       conn.release();
     }
@@ -206,10 +214,9 @@ app.get("/d/:token/info", async (req, res) => {
   const { token } = req.params;
   const conn = await pool.getConnection();
   try {
-    const [rows] = await conn.query(
-      "SELECT * FROM uploads WHERE token = ?",
-      [token]
-    );
+    const [rows] = await conn.query("SELECT * FROM uploads WHERE token = ?", [
+      token,
+    ]);
     if (rows.length === 0) {
       return res.status(404).json({ error: "Upload not found." });
     }
@@ -220,7 +227,7 @@ app.get("/d/:token/info", async (req, res) => {
 
     const [files] = await conn.query(
       "SELECT id, original_name, stored_name, size, mime_type FROM files WHERE upload_id = ?",
-      [upload.id]
+      [upload.id],
     );
 
     return res.json({
@@ -252,7 +259,7 @@ app.get("/d/:token/file/:fileId", async (req, res) => {
   try {
     const [uploadRows] = await conn.query(
       "SELECT * FROM uploads WHERE token = ?",
-      [token]
+      [token],
     );
     if (uploadRows.length === 0) {
       return res.status(404).json({ error: "Upload not found." });
@@ -264,7 +271,7 @@ app.get("/d/:token/file/:fileId", async (req, res) => {
 
     const [fileRows] = await conn.query(
       "SELECT * FROM files WHERE id = ? AND upload_id = ?",
-      [fileId, uploadRecord.id]
+      [fileId, uploadRecord.id],
     );
     if (fileRows.length === 0) {
       return res.status(404).json({ error: "File not found." });
@@ -275,7 +282,7 @@ app.get("/d/:token/file/:fileId", async (req, res) => {
       __dirname,
       "uploads",
       token,
-      fileRecord.stored_name
+      fileRecord.stored_name,
     );
     if (!fs.existsSync(filePath)) {
       return res.status(404).json({ error: "File not found on disk." });
@@ -288,17 +295,23 @@ app.get("/d/:token/file/:fileId", async (req, res) => {
 
     await conn.query(
       "INSERT INTO downloads (upload_id, file_id, downloader_ip) VALUES (?, ?, ?)",
-      [uploadRecord.id, fileRecord.id, downloaderIp]
+      [uploadRecord.id, fileRecord.id, downloaderIp],
     );
 
     await conn.query(
       "UPDATE uploads SET download_count = download_count + 1 WHERE id = ?",
-      [uploadRecord.id]
+      [uploadRecord.id],
     );
 
     const stat = fs.statSync(filePath);
-    res.setHeader("Content-Disposition", `attachment; filename="${encodeURIComponent(fileRecord.original_name)}"`);
-    res.setHeader("Content-Type", fileRecord.mime_type || "application/octet-stream");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${encodeURIComponent(fileRecord.original_name)}"`,
+    );
+    res.setHeader(
+      "Content-Type",
+      fileRecord.mime_type || "application/octet-stream",
+    );
     res.setHeader("Content-Length", stat.size);
 
     const stream = fs.createReadStream(filePath);
@@ -370,7 +383,9 @@ peerServer.on("disconnect", (client) => {
 // ─── Cron: cleanup every hour ─────────────────────────────────────────────────
 cron.schedule("0 * * * *", () => {
   console.log("Running scheduled cleanup of expired uploads…");
-  cleanupExpired().catch((e) => console.error("Cron cleanup error:", e.message));
+  cleanupExpired().catch((e) =>
+    console.error("Cron cleanup error:", e.message),
+  );
 });
 
 // ─── Server error handler ─────────────────────────────────────────────────────
