@@ -689,13 +689,43 @@
 
       /* Mobile */
       @media (max-width: 600px) {
-        .card { padding: 20px; }
+        .app { padding: 16px 14px 48px; }
+        .card { padding: 18px 16px; }
         .info-grid { grid-template-columns: 1fr; }
-        .share-link-box, .share-link-box-lan { flex-direction: column; }
+
+        header { padding: 4px 0 20px; }
+        .logo { font-size: 1.15rem; }
+
+        .mode-switch { margin-bottom: 20px; }
+        .mode-btn { padding: 10px 10px; font-size: 0.82rem; gap: 5px; }
+        .mode-btn svg { width: 14px; height: 14px; }
+
+        .drop-zone { padding: 32px 16px; }
+        .drop-icon { width: 52px; height: 52px; border-radius: 16px; }
+        .drop-icon svg { width: 22px; height: 22px; }
+        .drop-title { font-size: 1rem; }
+
+        .share-link-box,
+        .share-link-box-lan { flex-direction: column; }
+        .copy-btn { width: 100%; justify-content: center; }
+
+        .qr-section { flex-direction: column; align-items: center; text-align: center; }
+        .qr-box { margin: 0 auto; }
+
         .code-input-wrap { flex-direction: column; }
-        .qr-section { flex-direction: column; text-align: center; }
-        .dl-stats { flex-direction: column; align-items: center; }
-        .dl-file-card { flex-wrap: wrap; }
+        .code-input { font-size: 0.9rem; }
+        .btn { width: 100%; justify-content: center; }
+
+        .dl-stats { flex-direction: column; align-items: flex-start; gap: 8px; }
+        .dl-file-card { flex-wrap: wrap; gap: 8px; }
+        .dl-file-card .download-btn { width: 100%; justify-content: center; margin-top: 4px; }
+
+        .file-item { padding: 10px 12px; }
+        .result-actions { flex-direction: column; }
+        .result-actions .btn { width: 100%; }
+
+        .countdown-badge { font-size: 0.78rem; }
+        .expiry-bar { flex-direction: column; align-items: flex-start; gap: 6px; }
       }
     </style>
   </head>
@@ -1254,17 +1284,7 @@
         updateExpiry();
         expiryInterval = setInterval(updateExpiry, 1000);
 
-        // LAN link
-        loadPeerConfig().then(() => {
-          if (appConfig && appConfig.localIP && appConfig.localIP !== window.location.hostname) {
-            const port = appConfig.peerPort || window.location.port || '';
-            const token = data.token;
-            const protocol = appConfig.secure ? 'https' : 'http';
-            const lanUrl = protocol + '://' + appConfig.localIP + (port ? ':' + port : '') + '/d/' + token;
-            document.getElementById('lanLinkInput').value = lanUrl;
-            document.getElementById('lanLinkRow').classList.remove('hidden');
-          }
-        });
+        // LAN link row hidden intentionally
       }
 
       function copyResultLink() {
