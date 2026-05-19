@@ -331,11 +331,19 @@ app.get("/d/:token/file/:fileId", async (req, res) => {
 
 // ─── GET /config.json ─────────────────────────────────────────────────────────
 app.get("/config.json", (req, res) => {
+  // Use the external-facing port (from Host header), not the internal PORT.
+  // When behind Apache/nginx on 443, Host has no port suffix → default to 443/80.
+  const proto = req.headers["x-forwarded-proto"] || (useHttps ? "https" : "http");
+  const hostHeader = req.get("host") || "";
+  const externalPort = hostHeader.includes(":")
+    ? parseInt(hostHeader.split(":")[1], 10)
+    : proto === "https" ? 443 : 80;
+
   res.json({
     peerHost: process.env.PEER_HOST || null,
-    peerPort: parseInt(process.env.PORT || PORT, 10),
+    peerPort: externalPort,
     peerPath: "/",
-    secure: useHttps,
+    secure: proto === "https",
     localIP: getLocalIP(),
   });
 });
