@@ -1909,8 +1909,9 @@
       window.addEventListener('DOMContentLoaded', () => {
         const params = new URLSearchParams(window.location.search);
 
-        // Download view: ?d=TOKEN
-        const dlToken = params.get('d');
+        // Download view: /d/TOKEN (path) or ?d=TOKEN (query fallback)
+        const pathMatch = window.location.pathname.match(/^\/d\/([^/]+)$/);
+        const dlToken = pathMatch ? pathMatch[1] : params.get('d');
         if (dlToken) {
           initDownloadView(dlToken);
           return;

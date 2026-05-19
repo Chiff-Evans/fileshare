@@ -155,6 +155,11 @@ const upload = multer({
 const app = express();
 app.use(express.json());
 
+// ─── GET /d/:token — serve index.html (JS reads token from pathname) ─────────
+app.get("/d/:token", (req, res) => {
+  res.sendFile(path.join(__dirname, "index.html"));
+});
+
 // ─── POST /upload ─────────────────────────────────────────────────────────────
 app.post("/upload", prepareUpload, upload.array("files"), async (req, res) => {
   try {
