@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-Content \"c:\\\\xampp\\\\htdocs\\\\projects\\\\fileshare\\\\package.json\")",
+      "Bash(Measure-Object -Line)",
+      "Bash(Get-Content \"c:\\\\xampp\\\\htdocs\\\\projects\\\\fileshare\\\\server.js\")",
+      "Bash(Get-Content \"c:\\\\xampp\\\\htdocs\\\\projects\\\\fileshare\\\\index.html\")"
+    ]
+  }
+}
