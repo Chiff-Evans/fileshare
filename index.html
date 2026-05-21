@@ -2055,53 +2055,59 @@
       });
     </script>
     <script>
-      function showSWToast(type, title, desc, duration) {
-        const toast = document.getElementById('swToast');
-        const fill  = document.getElementById('swToastFill');
+      // notification.info() / notification.success() — mirrors the registerSW callback API
+      const notification = (() => {
         const UPDATE_ICON  = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>';
         const OFFLINE_ICON = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>';
-        document.getElementById('swToastIcon').innerHTML = type === 'update' ? UPDATE_ICON : OFFLINE_ICON;
-        document.getElementById('swToastTitle').textContent = title;
-        document.getElementById('swToastDesc').textContent  = desc;
-        toast.className = 'sw-toast ' + type;
-        fill.style.transition = 'none';
-        fill.style.width = '100%';
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          fill.style.transition = `width ${duration}ms linear`;
-          fill.style.width = '0%';
-        }));
-        return new Promise(resolve => setTimeout(() => {
-          toast.classList.add('hidden');
-          resolve();
-        }, duration));
-      }
+
+        function show(variant, { message, description, duration = 4, onClose }) {
+          const toast = document.getElementById('swToast');
+          const fill  = document.getElementById('swToastFill');
+          document.getElementById('swToastIcon').innerHTML  = variant === 'update' ? UPDATE_ICON : OFFLINE_ICON;
+          document.getElementById('swToastTitle').textContent = message;
+          document.getElementById('swToastDesc').textContent  = description;
+          toast.className = 'sw-toast ' + variant;
+          fill.style.transition = 'none';
+          fill.style.width = '100%';
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            fill.style.transition = `width ${duration * 1000}ms linear`;
+            fill.style.width = '0%';
+          }));
+          setTimeout(() => { toast.classList.add('hidden'); onClose?.(); }, duration * 1000);
+        }
+
+        return {
+          info:    opts => show('update',  opts),
+          success: opts => show('offline', opts),
+        };
+      })();
 
       if ('serviceWorker' in navigator) {
         let swReg = null;
         let swRefreshing = false;
 
-        // When the new SW takes control after skipWaiting, reload to apply it
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           if (!swRefreshing) { swRefreshing = true; window.location.reload(); }
         });
 
-        // SW broadcasts SW_INSTALLED once caching succeeds (install event)
+        // SW posts SW_INSTALLED after caching succeeds; we react here
         navigator.serviceWorker.addEventListener('message', ({ data }) => {
           if (!data || data.type !== 'SW_INSTALLED') return;
+
           if (data.isUpdate) {
-            showSWToast(
-              'update',
-              'Update available',
-              'A new version of SendMaster is ready. Refreshing…',
-              3000
-            ).then(() => swReg?.waiting?.postMessage({ type: 'SKIP_WAITING' }));
+            notification.info({
+              message: 'Update available',
+              description: 'A new version of SendMaster is ready. Refreshing…',
+              duration: 3,
+              onClose: () => swReg?.waiting?.postMessage({ type: 'SKIP_WAITING' }),
+            });
+            setTimeout(() => swReg?.waiting?.postMessage({ type: 'SKIP_WAITING' }), 3500);
           } else {
-            showSWToast(
-              'offline',
-              'Ready to install',
-              'SendMaster is now available offline and can be added to your home screen.',
-              4000
-            );
+            notification.success({
+              message: 'Ready to use as a separate app',
+              description: 'SendMaster is now available for installation.',
+              duration: 4,
+            });
           }
         });
 
