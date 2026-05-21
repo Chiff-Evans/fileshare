@@ -2,10 +2,13 @@ const CACHE = 'sendmaster-v1';
 const SHELL = ['/', '/index.html', '/favicon.ico', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));
-  // Do NOT call skipWaiting here — the page controls when to apply an update
-  // so it can show a notification first. On first install there is no
-  // competing SW so the browser activates this one immediately anyway.
+  const isUpdate = !!self.registration.active;
+  e.waitUntil(
+    caches.open(CACHE)
+      .then(c => c.addAll(SHELL))
+      .then(() => self.clients.matchAll({ includeUncontrolled: true, type: 'window' }))
+      .then(clients => clients.forEach(c => c.postMessage({ type: 'SW_INSTALLED', isUpdate })))
+  );
 });
 
 self.addEventListener('message', e => {

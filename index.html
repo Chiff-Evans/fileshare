@@ -2056,15 +2056,14 @@
     </script>
     <script>
       function showSWToast(type, title, desc, duration) {
-        const toast  = document.getElementById('swToast');
-        const fill   = document.getElementById('swToastFill');
-        const UPDATE_ICON = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>';
+        const toast = document.getElementById('swToast');
+        const fill  = document.getElementById('swToastFill');
+        const UPDATE_ICON  = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>';
         const OFFLINE_ICON = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>';
         document.getElementById('swToastIcon').innerHTML = type === 'update' ? UPDATE_ICON : OFFLINE_ICON;
         document.getElementById('swToastTitle').textContent = title;
         document.getElementById('swToastDesc').textContent  = desc;
         toast.className = 'sw-toast ' + type;
-        // Animate progress bar shrinking over `duration` ms
         fill.style.transition = 'none';
         fill.style.width = '100%';
         requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -2078,41 +2077,38 @@
       }
 
       if ('serviceWorker' in navigator) {
+        let swReg = null;
         let swRefreshing = false;
-        // When the new SW takes control, reload to apply the update
+
+        // When the new SW takes control after skipWaiting, reload to apply it
         navigator.serviceWorker.addEventListener('controllerchange', () => {
           if (!swRefreshing) { swRefreshing = true; window.location.reload(); }
         });
 
+        // SW broadcasts SW_INSTALLED once caching succeeds (install event)
+        navigator.serviceWorker.addEventListener('message', ({ data }) => {
+          if (!data || data.type !== 'SW_INSTALLED') return;
+          if (data.isUpdate) {
+            showSWToast(
+              'update',
+              'Update available',
+              'A new version of SendMaster is ready. Refreshing…',
+              3000
+            ).then(() => swReg?.waiting?.postMessage({ type: 'SKIP_WAITING' }));
+          } else {
+            showSWToast(
+              'offline',
+              'Ready to install',
+              'SendMaster is now available offline and can be added to your home screen.',
+              4000
+            );
+          }
+        });
+
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').then(reg => {
-            reg.addEventListener('updatefound', () => {
-              const sw = reg.installing;
-              const isUpdate = !!navigator.serviceWorker.controller;
-              sw.addEventListener('statechange', () => {
-                if (sw.state === 'installed' && isUpdate) {
-                  // New version is waiting — notify then apply
-                  showSWToast(
-                    'update',
-                    'Update available',
-                    'A new version of SendMaster is ready. Refreshing…',
-                    3000
-                  ).then(() => {
-                    if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
-                  });
-                }
-                if (sw.state === 'activated' && !isUpdate) {
-                  // First install complete — app is offline-ready
-                  showSWToast(
-                    'offline',
-                    'Ready to install',
-                    'SendMaster is now available offline and can be added to your home screen.',
-                    4000
-                  );
-                }
-              });
-            });
-          }).catch(() => {});
+          navigator.serviceWorker.register('/sw.js')
+            .then(reg => { swReg = reg; })
+            .catch(() => {});
         });
       }
     </script>
