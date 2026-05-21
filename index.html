@@ -4,6 +4,13 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SendMaster — Instant File Sharing</title>
+    <meta name="theme-color" content="#6c63ff" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="SendMaster" />
+    <meta name="description" content="Instant file sharing — upload once, share anywhere." />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
     <link
       href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap"
@@ -499,6 +506,7 @@
         font-family: "Syne", sans-serif;
         font-weight: 800; font-size: 1.8rem;
         margin-bottom: 8px;
+        max-width: 100%;
       }
       .dl-meta { color: var(--muted); font-size: 0.9rem; }
 
@@ -736,8 +744,65 @@
 
         .upload-progress-header { flex-direction: column; align-items: center; gap: 4px; }
 
+        .dl-title { font-size: 1.1rem; }
+
         .countdown-badge { font-size: 0.78rem; }
         .expiry-bar { flex-direction: column; align-items: center; gap: 6px; }
+      }
+
+      /* ─── SW update / offline-ready toast ─────────────────────────────────── */
+      .sw-toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 9999;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 16px 18px;
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+        max-width: 300px;
+        animation: swSlideIn 0.35s cubic-bezier(.22,1,.36,1);
+      }
+      .sw-toast.hidden { display: none !important; }
+      @keyframes swSlideIn {
+        from { opacity: 0; transform: translateY(20px) scale(0.96); }
+        to   { opacity: 1; transform: translateY(0)   scale(1); }
+      }
+      .sw-toast-icon {
+        width: 36px; height: 36px; border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+      }
+      .sw-toast.update .sw-toast-icon { background: rgba(108,99,255,0.15); color: var(--accent); }
+      .sw-toast.offline .sw-toast-icon { background: rgba(67,233,123,0.15); color: var(--accent3); }
+      .sw-toast-body { flex: 1; min-width: 0; }
+      .sw-toast-title { font-weight: 600; font-size: 0.88rem; margin-bottom: 3px; }
+      .sw-toast.update .sw-toast-title { color: var(--accent); }
+      .sw-toast.offline .sw-toast-title { color: var(--accent3); }
+      .sw-toast-desc { color: var(--muted); font-size: 0.78rem; line-height: 1.45; }
+      .sw-toast-bar {
+        height: 3px; border-radius: 99px;
+        background: var(--surface); margin-top: 10px; overflow: hidden;
+      }
+      .sw-toast-fill {
+        height: 100%; border-radius: 99px; width: 100%;
+        transition: width linear;
+      }
+      .sw-toast.update .sw-toast-fill { background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+      .sw-toast.offline .sw-toast-fill { background: linear-gradient(90deg, var(--accent3), #38f9d7); }
+      .sw-toast-close {
+        background: none; border: none; color: var(--muted);
+        cursor: pointer; font-size: 1rem; line-height: 1;
+        padding: 2px 4px; border-radius: 6px; flex-shrink: 0;
+        transition: color 0.15s;
+      }
+      .sw-toast-close:hover { color: var(--text); }
+      @media (max-width: 600px) {
+        .sw-toast { bottom: 16px; right: 16px; left: 16px; max-width: none; }
       }
     </style>
   </head>
@@ -746,6 +811,17 @@
       <div class="orb orb1"></div>
       <div class="orb orb2"></div>
       <div class="orb orb3"></div>
+    </div>
+
+    <!-- SW update / offline-ready toast -->
+    <div id="swToast" class="sw-toast hidden" role="status" aria-live="polite">
+      <div class="sw-toast-icon" id="swToastIcon"></div>
+      <div class="sw-toast-body">
+        <div class="sw-toast-title" id="swToastTitle"></div>
+        <div class="sw-toast-desc"  id="swToastDesc"></div>
+        <div class="sw-toast-bar"><div class="sw-toast-fill" id="swToastFill"></div></div>
+      </div>
+      <button class="sw-toast-close" onclick="document.getElementById('swToast').classList.add('hidden')" aria-label="Dismiss">✕</button>
     </div>
 
     <div class="app" id="mainApp">
@@ -1072,6 +1148,17 @@
         return s + 's';
       }
 
+      function truncateMiddle(name, maxLen = 32) {
+        if (name.length <= maxLen) return name;
+        const dotIdx = name.lastIndexOf('.');
+        const ext = dotIdx > 0 && dotIdx > name.length - 8 ? name.slice(dotIdx) : '';
+        const base = ext ? name.slice(0, dotIdx) : name;
+        const avail = maxLen - 1 - ext.length; // 1 for ellipsis char
+        const front = Math.ceil(avail * 0.6);
+        const back = Math.floor(avail * 0.4);
+        return base.slice(0, front) + '…' + base.slice(-back) + ext;
+      }
+
       // ═══════════════════════════════════════════════════════════════════════
       // PeerJS config (shared by LAN mode)
       // ═══════════════════════════════════════════════════════════════════════
@@ -1390,7 +1477,9 @@
         iconDiv.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
         const titleEl = document.createElement('div');
         titleEl.className = 'dl-title';
-        titleEl.textContent = data.files.length === 1 ? data.files[0].name : data.files.length + ' Files Ready';
+        titleEl.textContent = data.files.length === 1
+          ? truncateMiddle(data.files[0].name)
+          : data.files.length + ' Files Ready';
         const metaEl = document.createElement('div');
         metaEl.className = 'dl-meta';
         metaEl.textContent = fmtSize(data.totalSize) + ' total';
@@ -1964,6 +2053,68 @@
         // Pre-load peer config in background
         loadPeerConfig();
       });
+    </script>
+    <script>
+      function showSWToast(type, title, desc, duration) {
+        const toast  = document.getElementById('swToast');
+        const fill   = document.getElementById('swToastFill');
+        const UPDATE_ICON = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>';
+        const OFFLINE_ICON = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>';
+        document.getElementById('swToastIcon').innerHTML = type === 'update' ? UPDATE_ICON : OFFLINE_ICON;
+        document.getElementById('swToastTitle').textContent = title;
+        document.getElementById('swToastDesc').textContent  = desc;
+        toast.className = 'sw-toast ' + type;
+        // Animate progress bar shrinking over `duration` ms
+        fill.style.transition = 'none';
+        fill.style.width = '100%';
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          fill.style.transition = `width ${duration}ms linear`;
+          fill.style.width = '0%';
+        }));
+        return new Promise(resolve => setTimeout(() => {
+          toast.classList.add('hidden');
+          resolve();
+        }, duration));
+      }
+
+      if ('serviceWorker' in navigator) {
+        let swRefreshing = false;
+        // When the new SW takes control, reload to apply the update
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!swRefreshing) { swRefreshing = true; window.location.reload(); }
+        });
+
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then(reg => {
+            reg.addEventListener('updatefound', () => {
+              const sw = reg.installing;
+              const isUpdate = !!navigator.serviceWorker.controller;
+              sw.addEventListener('statechange', () => {
+                if (sw.state === 'installed' && isUpdate) {
+                  // New version is waiting — notify then apply
+                  showSWToast(
+                    'update',
+                    'Update available',
+                    'A new version of SendMaster is ready. Refreshing…',
+                    3000
+                  ).then(() => {
+                    if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                  });
+                }
+                if (sw.state === 'activated' && !isUpdate) {
+                  // First install complete — app is offline-ready
+                  showSWToast(
+                    'offline',
+                    'Ready to install',
+                    'SendMaster is now available offline and can be added to your home screen.',
+                    4000
+                  );
+                }
+              });
+            });
+          }).catch(() => {});
+        });
+      }
     </script>
   </body>
 </html>
