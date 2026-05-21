@@ -333,7 +333,9 @@ app.get("/d/:token/file/:fileId", async (req, res) => {
 app.get("/config.json", (req, res) => {
   // Use the external-facing port (from Host header), not the internal PORT.
   // When behind Apache/nginx on 443, Host has no port suffix → default to 443/80.
-  const proto = req.headers["x-forwarded-proto"] || (useHttps ? "https" : "http");
+  const forwarded = req.headers["x-forwarded-proto"];
+  const isLocalhost = (req.get("host") || "").match(/^localhost|^127\.|^::1/);
+  const proto = forwarded || (useHttps ? "https" : isLocalhost ? "http" : "https");
   const hostHeader = req.get("host") || "";
   const externalPort = hostHeader.includes(":")
     ? parseInt(hostHeader.split(":")[1], 10)
