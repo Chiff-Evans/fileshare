@@ -693,7 +693,7 @@
         .card { padding: 18px 16px; }
         .info-grid { grid-template-columns: 1fr; }
 
-        header { padding: 4px 0 20px; }
+        header { padding: 4px 0 20px; justify-content: center; gap: 12px; }
         .logo { font-size: 1.15rem; }
 
         .mode-switch { margin-bottom: 20px; }
@@ -705,6 +705,8 @@
         .drop-icon svg { width: 22px; height: 22px; }
         .drop-title { font-size: 1rem; }
 
+        .share-label { text-align: center; }
+
         .share-link-box,
         .share-link-box-lan { flex-direction: column; }
         .copy-btn { width: 100%; justify-content: center; }
@@ -712,20 +714,30 @@
         .qr-section { flex-direction: column; align-items: center; text-align: center; }
         .qr-box { margin: 0 auto; }
 
+        .result-title { justify-content: center; }
+        .result-card { text-align: center; }
+        .expiry-badge { display: flex; justify-content: center; width: 100%; }
+
         .code-input-wrap { flex-direction: column; }
         .code-input { font-size: 0.9rem; }
         .btn { width: 100%; justify-content: center; }
 
-        .dl-stats { flex-direction: column; align-items: flex-start; gap: 8px; }
+        .dl-stats { flex-direction: column; align-items: center; gap: 8px; }
         .dl-file-card { flex-wrap: wrap; gap: 8px; }
         .dl-file-card .download-btn { width: 100%; justify-content: center; margin-top: 4px; }
+        .dl-file-name { text-align: center; }
+        .dl-file-size { text-align: center; }
 
         .file-item { padding: 10px 12px; }
+        .file-name { text-align: center; }
+        .file-size { text-align: center; }
         .result-actions { flex-direction: column; }
         .result-actions .btn { width: 100%; }
 
+        .upload-progress-header { flex-direction: column; align-items: center; gap: 4px; }
+
         .countdown-badge { font-size: 0.78rem; }
-        .expiry-bar { flex-direction: column; align-items: flex-start; gap: 6px; }
+        .expiry-bar { flex-direction: column; align-items: center; gap: 6px; }
       }
     </style>
   </head>
