@@ -1,4 +1,13 @@
 require("dotenv").config();
+
+// Re-read .env whenever it is saved — no server restart needed
+const dotenv = require("dotenv");
+const envPath = require("path").resolve(__dirname, ".env");
+require("fs").watch(envPath, () => {
+  dotenv.config({ path: envPath, override: true });
+  console.log(".env reloaded");
+});
+
 const express = require("express");
 const { ExpressPeerServer } = require("peer");
 const https = require("https");

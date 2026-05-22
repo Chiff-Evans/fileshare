@@ -2138,6 +2138,12 @@
         document.getElementById('rxProgressLabel').textContent = label || 'Receiving…';
       }
 
+      function applyShowStats(cfg) {
+        const bar = document.getElementById('statsBar');
+        if (!bar) return;
+        bar.style.display = (cfg && cfg.showStats === false) ? 'none' : '';
+      }
+
       // ═══════════════════════════════════════════════════════════════════════
       // Initialisation
       // ═══════════════════════════════════════════════════════════════════════
@@ -2173,9 +2179,7 @@
           if (appConfig?.maxFileSize) {
             document.getElementById('maxFileSizeLabel').textContent = fmtSize(appConfig.maxFileSize);
           }
-          if (appConfig?.showStats === false) {
-            document.getElementById('statsBar').style.display = 'none';
-          }
+          applyShowStats(appConfig);
         });
 
         // Stats: fetch independently; use ?? 0 so a missing field never throws
@@ -2187,6 +2191,15 @@
             document.getElementById('statLan').textContent       = (+(data.totalLanTransfers  ?? 0)).toLocaleString();
           })
           .catch(() => {}); // leave "—" placeholders on error, don't hide the bar
+
+        // Re-check showStats whenever the tab becomes visible again (e.g. after .env edit)
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState !== 'visible') return;
+          fetch('/config.json')
+            .then(r => r.json())
+            .then(cfg => applyShowStats(cfg))
+            .catch(() => {});
+        });
       });
     </script>
     <script>
