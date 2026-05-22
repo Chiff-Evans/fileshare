@@ -33,6 +33,13 @@ self.addEventListener('fetch', e => {
   // Never cache upload POSTs or file downloads — let those go straight to network
   if (url.pathname.startsWith('/upload') || url.pathname.match(/\/file\/\d+$/)) return;
 
+  // Dynamic API — always network-only, never read from or write to cache
+  const NEVER_CACHE = ['/stats', '/config.json', '/health'];
+  if (NEVER_CACHE.some(p => url.pathname === p || url.pathname.startsWith(p + '/'))) {
+    e.respondWith(fetch(request));
+    return;
+  }
+
   // API info endpoints: network-first so download pages always show fresh data
   if (url.pathname.match(/\/d\/[^/]+\/info$/)) {
     e.respondWith(

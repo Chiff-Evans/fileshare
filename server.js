@@ -398,6 +398,7 @@ app.get("/stats", async (req, res) => {
       "SELECT total_uploads, total_downloads, total_lan_transfers FROM stats WHERE id = 1"
     );
     const row = rows[0] || {};
+    res.set('Cache-Control', 'no-store');
     // parseInt(String(...)) safely handles BigInt, string, and number values
     res.json({
       totalUploads:      parseInt(String(row.total_uploads      ?? 0), 10) || 0,
@@ -435,6 +436,7 @@ app.get("/config.json", (req, res) => {
     ? parseInt(hostHeader.split(":")[1], 10)
     : proto === "https" ? 443 : 80;
 
+  res.set('Cache-Control', 'no-store');
   res.json({
     peerHost: process.env.PEER_HOST || null,
     peerPort: externalPort,
