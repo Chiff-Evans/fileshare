@@ -575,6 +575,35 @@
         text-decoration: none;
       }
       .dl-btn:hover { background: rgba(108, 99, 255, 0.28); transform: translateY(-1px); }
+      .dl-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+      .dl-progress-wrap { display: none; margin-top: 7px; }
+      .dl-progress-wrap.active { display: block; }
+      .dl-progress-track {
+        height: 4px;
+        background: rgba(108, 99, 255, 0.15);
+        border-radius: 4px;
+        overflow: hidden;
+        margin-bottom: 4px;
+      }
+      .dl-progress-fill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, var(--accent), #9b8eff);
+        border-radius: 4px;
+        transition: width 0.2s ease;
+      }
+      .dl-progress-fill.done {
+        background: linear-gradient(90deg, var(--accent3), #38f9d7);
+        transition: none;
+      }
+      .dl-progress-status {
+        font-size: 0.72rem;
+        color: var(--muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
 
       .dl-stats {
         display: flex; gap: 16px;
@@ -809,9 +838,10 @@
 
         .dl-stats { flex-direction: column; align-items: center; gap: 8px; }
         .dl-file-card { flex-wrap: wrap; gap: 8px; }
-        .dl-file-card .download-btn { width: 100%; justify-content: center; margin-top: 4px; }
+        .dl-file-card .dl-btn { width: 100%; justify-content: center; margin-top: 4px; }
         .dl-file-name { text-align: center; }
         .dl-file-size { text-align: center; }
+        .dl-progress-status { white-space: normal; }
 
         .file-item { padding: 10px 12px; }
         .file-name { text-align: center; }
@@ -1662,9 +1692,13 @@
         content.appendChild(sendLink);
       }
 
+      const DL_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
+      const OK_ICON  = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>';
+
       function createDlFileCard(file, token) {
         const card = document.createElement('div');
         card.className = 'dl-file-card';
+        card.dataset.fileId = file.id;
 
         const ext = file.name.split('.').pop().slice(0, 4) || '?';
         const iconEl = document.createElement('div');
@@ -1679,28 +1713,112 @@
         const sizeEl = document.createElement('div');
         sizeEl.className = 'dl-file-size';
         sizeEl.textContent = fmtSize(file.size);
-        infoEl.append(nameEl, sizeEl);
+        const progressWrap = document.createElement('div');
+        progressWrap.className = 'dl-progress-wrap';
+        progressWrap.innerHTML =
+          '<div class="dl-progress-track"><div class="dl-progress-fill"></div></div>' +
+          '<div class="dl-progress-status"></div>';
+        infoEl.append(nameEl, sizeEl, progressWrap);
 
-        const dlLink = document.createElement('a');
-        dlLink.href = '/d/' + encodeURIComponent(token) + '/file/' + file.id;
-        dlLink.className = 'dl-btn';
-        dlLink.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download';
-        dlLink.setAttribute('download', '');
+        const dlBtn = document.createElement('button');
+        dlBtn.className = 'dl-btn';
+        dlBtn.innerHTML = DL_ICON + ' Download';
+        dlBtn.onclick = () => downloadWithProgress(file, token, card);
 
-        card.append(iconEl, infoEl, dlLink);
+        card.append(iconEl, infoEl, dlBtn);
         return card;
+      }
+
+      async function downloadWithProgress(file, token, card) {
+        const btn        = card.querySelector('.dl-btn');
+        const wrap       = card.querySelector('.dl-progress-wrap');
+        const fill       = card.querySelector('.dl-progress-fill');
+        const statusEl   = card.querySelector('.dl-progress-status');
+
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.innerHTML = DL_ICON + ' …';
+        wrap.classList.add('active');
+        fill.classList.remove('done');
+        fill.style.width = '0%';
+        statusEl.textContent = 'Connecting…';
+
+        const url = '/d/' + encodeURIComponent(token) + '/file/' + file.id;
+
+        try {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error('Server returned ' + res.status);
+
+          const total    = parseInt(res.headers.get('content-length') || '0', 10);
+          const reader   = res.body.getReader();
+          const chunks   = [];
+          let received   = 0;
+          let lastUITime = 0;
+          let lastSpeedTime   = Date.now();
+          let lastSpeedBytes  = 0;
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            chunks.push(value);
+            received += value.length;
+
+            const now = Date.now();
+            if (now - lastUITime >= 120) {
+              const elapsed = Math.max((now - lastSpeedTime) / 1000, 0.001);
+              const speed   = (received - lastSpeedBytes) / elapsed;
+              lastSpeedBytes = received;
+              lastSpeedTime  = now;
+              lastUITime     = now;
+
+              const pct = total ? Math.min(Math.round(received / total * 100), 99) : 0;
+              if (total) fill.style.width = pct + '%';
+
+              const eta   = total && speed > 0 ? (total - received) / speed : 0;
+              const parts = [];
+              if (total) parts.push(pct + '%');
+              parts.push(fmtSize(received) + (total ? ' / ' + fmtSize(total) : ''));
+              if (speed > 0) parts.push(fmtSpeed(speed));
+              if (eta > 2)   parts.push(fmtTime(eta) + ' left');
+              statusEl.textContent = parts.join(' · ');
+            }
+          }
+
+          // Assemble and trigger native save dialog
+          const blob   = new Blob(chunks);
+          const objUrl = URL.createObjectURL(blob);
+          const a      = document.createElement('a');
+          a.href     = objUrl;
+          a.download = file.name;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(objUrl), 60000);
+
+          fill.style.width = '100%';
+          fill.classList.add('done');
+          statusEl.textContent = 'Saved · ' + fmtSize(received);
+          btn.disabled  = false;
+          btn.innerHTML = OK_ICON + ' Saved';
+          btn.style.cssText = 'background:rgba(67,233,123,0.12);color:var(--accent3);border-color:rgba(67,233,123,0.25)';
+          btn.onclick = null;
+
+        } catch (err) {
+          fill.style.width = '0%';
+          statusEl.textContent = err.message || 'Download failed — try again';
+          btn.disabled  = false;
+          btn.innerHTML = DL_ICON + ' Retry';
+        }
       }
 
       function downloadAll(files, token) {
         files.forEach((file, i) => {
           setTimeout(() => {
-            const a = document.createElement('a');
-            a.href = '/d/' + encodeURIComponent(token) + '/file/' + file.id;
-            a.download = file.name;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-          }, i * 500);
+            const card = document.querySelector('.dl-file-card[data-file-id="' + file.id + '"]');
+            if (!card) return;
+            const btn = card.querySelector('.dl-btn');
+            if (btn && !btn.disabled) btn.click();
+          }, i * 800);
         });
       }
 
