@@ -2165,29 +2165,28 @@
           return;
         }
 
-        // Pre-load peer config, then apply server-driven settings
-        loadPeerConfig().then(() => {
-          // Update file-size label in drop zone
+        // Fire both requests in parallel — stats must not depend on config loading
+        const configPromise = loadPeerConfig();
+
+        // Config: update file-size label and honour showStats flag
+        configPromise.then(() => {
           if (appConfig?.maxFileSize) {
             document.getElementById('maxFileSizeLabel').textContent = fmtSize(appConfig.maxFileSize);
           }
-
-          // Stats bar
-          if (appConfig && appConfig.showStats === false) {
+          if (appConfig?.showStats === false) {
             document.getElementById('statsBar').style.display = 'none';
-            return;
           }
-          fetch('/stats')
-            .then(r => r.json())
-            .then(({ totalUploads, totalDownloads, totalLanTransfers }) => {
-              document.getElementById('statUploads').textContent   = totalUploads.toLocaleString();
-              document.getElementById('statDownloads').textContent = totalDownloads.toLocaleString();
-              document.getElementById('statLan').textContent       = totalLanTransfers.toLocaleString();
-            })
-            .catch(() => {
-              document.getElementById('statsBar').style.display = 'none';
-            });
         });
+
+        // Stats: fetch independently; use ?? 0 so a missing field never throws
+        fetch('/stats')
+          .then(r => r.json())
+          .then(data => {
+            document.getElementById('statUploads').textContent   = (+(data.totalUploads       ?? 0)).toLocaleString();
+            document.getElementById('statDownloads').textContent = (+(data.totalDownloads     ?? 0)).toLocaleString();
+            document.getElementById('statLan').textContent       = (+(data.totalLanTransfers  ?? 0)).toLocaleString();
+          })
+          .catch(() => {}); // leave "—" placeholders on error, don't hide the bar
       });
     </script>
     <script>
