@@ -394,20 +394,18 @@ app.get("/d/:token/file/:fileId", async (req, res) => {
 // ─── GET /stats ───────────────────────────────────────────────────────────────
 app.get("/stats", async (req, res) => {
   try {
-    const conn = await pool.getConnection();
-    try {
-      const [[row]] = await conn.query(
-        "SELECT total_uploads, total_downloads, total_lan_transfers FROM stats WHERE id = 1"
-      );
-      res.json({
-        totalUploads:      Number(row?.total_uploads       ?? 0),
-        totalDownloads:    Number(row?.total_downloads     ?? 0),
-        totalLanTransfers: Number(row?.total_lan_transfers ?? 0),
-      });
-    } finally {
-      conn.release();
-    }
+    const [rows] = await pool.query(
+      "SELECT total_uploads, total_downloads, total_lan_transfers FROM stats WHERE id = 1"
+    );
+    const row = rows[0] || {};
+    // parseInt(String(...)) safely handles BigInt, string, and number values
+    res.json({
+      totalUploads:      parseInt(String(row.total_uploads      ?? 0), 10) || 0,
+      totalDownloads:    parseInt(String(row.total_downloads    ?? 0), 10) || 0,
+      totalLanTransfers: parseInt(String(row.total_lan_transfers ?? 0), 10) || 0,
+    });
   } catch (err) {
+    console.error("Stats error:", err.message);
     res.json({ totalUploads: 0, totalDownloads: 0, totalLanTransfers: 0 });
   }
 });
@@ -415,16 +413,12 @@ app.get("/stats", async (req, res) => {
 // ─── POST /stats/lan-transfer ─────────────────────────────────────────────────
 app.post("/stats/lan-transfer", async (req, res) => {
   try {
-    const conn = await pool.getConnection();
-    try {
-      await conn.query(
-        "UPDATE stats SET total_lan_transfers = total_lan_transfers + 1 WHERE id = 1"
-      );
-      res.json({ ok: true });
-    } finally {
-      conn.release();
-    }
+    await pool.query(
+      "UPDATE stats SET total_lan_transfers = total_lan_transfers + 1 WHERE id = 1"
+    );
+    res.json({ ok: true });
   } catch (err) {
+    console.error("LAN transfer stats error:", err.message);
     res.json({ ok: false });
   }
 });
