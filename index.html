@@ -695,6 +695,35 @@
       .text-center { text-align: center; }
       .text-muted { color: var(--muted); }
 
+      /* Stats bar */
+      .stats-bar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        margin-bottom: 24px;
+        padding: 10px 20px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        font-size: 0.82rem;
+        color: var(--muted);
+      }
+      .stats-bar .stat {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+      }
+      .stats-bar .stat strong {
+        font-size: 0.95rem;
+        font-weight: 700;
+        font-family: "Syne", sans-serif;
+        color: var(--text);
+      }
+      .stats-bar .stat svg { flex-shrink: 0; opacity: 0.7; }
+      .stats-bar .sep { width: 1px; height: 16px; background: var(--border); }
+
       /* Mobile */
       @media (max-width: 600px) {
         .app { padding: 16px 14px 48px; }
@@ -857,6 +886,27 @@
           <div class="logo">Send Master ✦</div>
           <div class="badge">v2</div>
         </header>
+
+        <!-- All-time transfer stats -->
+        <div class="stats-bar" id="statsBar">
+          <div class="stat">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.2">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <strong id="statUploads">—</strong> uploads
+          </div>
+          <div class="sep"></div>
+          <div class="stat">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent3)" stroke-width="2.2">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <strong id="statDownloads">—</strong> downloads
+          </div>
+        </div>
 
         <!-- Tab switcher -->
         <div class="mode-switch">
@@ -2050,8 +2100,22 @@
           return;
         }
 
-        // Pre-load peer config in background
-        loadPeerConfig();
+        // Pre-load peer config, then conditionally show stats bar
+        loadPeerConfig().then(() => {
+          if (appConfig && appConfig.showStats === false) {
+            document.getElementById('statsBar').style.display = 'none';
+            return;
+          }
+          fetch('/stats')
+            .then(r => r.json())
+            .then(({ totalUploads, totalDownloads }) => {
+              document.getElementById('statUploads').textContent   = totalUploads.toLocaleString();
+              document.getElementById('statDownloads').textContent = totalDownloads.toLocaleString();
+            })
+            .catch(() => {
+              document.getElementById('statsBar').style.display = 'none';
+            });
+        });
       });
     </script>
     <script>

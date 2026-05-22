@@ -74,6 +74,14 @@ async function initDB() {
         FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE CASCADE
       )
     `);
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS stats (
+        id INT PRIMARY KEY DEFAULT 1,
+        total_uploads BIGINT UNSIGNED DEFAULT 0,
+        total_downloads BIGINT UNSIGNED DEFAULT 0
+      )
+    `);
+    await conn.query(`INSERT IGNORE INTO stats (id) VALUES (1)`);
     console.log("Database tables ready.");
   } finally {
     conn.release();
@@ -199,6 +207,8 @@ app.post("/upload", prepareUpload, upload.array("files"), async (req, res) => {
         );
       }
 
+      await conn.query(`UPDATE stats SET total_uploads = total_uploads + 1 WHERE id = 1`);
+
       const downloadUrl = `${req.protocol}://${req.get("host")}/d/${token}`;
       return res.json({
         token,
@@ -307,6 +317,7 @@ app.get("/d/:token/file/:fileId", async (req, res) => {
       "UPDATE uploads SET download_count = download_count + 1 WHERE id = ?",
       [uploadRecord.id],
     );
+    await conn.query(`UPDATE stats SET total_downloads = total_downloads + 1 WHERE id = 1`);
 
     const stat = fs.statSync(filePath);
     res.setHeader(
@@ -329,6 +340,24 @@ app.get("/d/:token/file/:fileId", async (req, res) => {
   }
 });
 
+// ─── GET /stats ───────────────────────────────────────────────────────────────
+app.get("/stats", async (req, res) => {
+  try {
+    const conn = await pool.getConnection();
+    try {
+      const [[row]] = await conn.query("SELECT total_uploads, total_downloads FROM stats WHERE id = 1");
+      res.json({
+        totalUploads:   Number(row?.total_uploads   ?? 0),
+        totalDownloads: Number(row?.total_downloads ?? 0),
+      });
+    } finally {
+      conn.release();
+    }
+  } catch (err) {
+    res.json({ totalUploads: 0, totalDownloads: 0 });
+  }
+});
+
 // ─── GET /config.json ─────────────────────────────────────────────────────────
 app.get("/config.json", (req, res) => {
   // Use the external-facing port (from Host header), not the internal PORT.
@@ -347,6 +376,7 @@ app.get("/config.json", (req, res) => {
     peerPath: "/",
     secure: proto === "https",
     localIP: getLocalIP(),
+    showStats: process.env.SHOW_STATS !== "false",
   });
 });
 
