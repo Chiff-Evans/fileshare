@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Terms of Service — SendMaster</title>
+    <meta
+      name="description"
+      content="SendMaster Terms of Service — rules for using the file sharing service."
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0a0a0f;
+        --surface: #13131a;
+        --surface2: #1c1c28;
+        --border: rgba(255, 255, 255, 0.07);
+        --accent: #6c63ff;
+        --accent2: #ff6584;
+        --accent3: #43e97b;
+        --text: #f0f0f8;
+        --muted: #6b6b80;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "DM Sans", sans-serif;
+        min-height: 100vh;
+      }
+      .bg-orbs {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        overflow: hidden;
+      }
+      .orb {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+        opacity: 0.12;
+        animation: float 12s ease-in-out infinite;
+      }
+      .orb1 {
+        width: 500px;
+        height: 500px;
+        background: var(--accent);
+        top: -150px;
+        left: -150px;
+      }
+      .orb2 {
+        width: 400px;
+        height: 400px;
+        background: var(--accent2);
+        bottom: -100px;
+        right: -100px;
+        animation-delay: -4s;
+      }
+      .orb3 {
+        width: 300px;
+        height: 300px;
+        background: var(--accent3);
+        top: 40%;
+        left: 60%;
+        animation-delay: -8s;
+      }
+      @keyframes float {
+        0%,
+        100% {
+          transform: translate(0, 0) scale(1);
+        }
+        33% {
+          transform: translate(20px, -20px) scale(1.05);
+        }
+        66% {
+          transform: translate(-15px, 15px) scale(0.95);
+        }
+      }
+      .app {
+        position: relative;
+        z-index: 1;
+        max-width: 860px;
+        margin: 0 auto;
+        padding: 24px 20px 60px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 0 32px;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .logo {
+        font-family: "Syne", sans-serif;
+        font-weight: 800;
+        font-size: 1.4rem;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-decoration: none;
+      }
+      .nav-links {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+      .nav-links a {
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 0.88rem;
+        transition: color 0.2s;
+      }
+      .nav-links a:hover {
+        color: var(--text);
+      }
+      .card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 36px 40px;
+        box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+        margin-bottom: 20px;
+      }
+      .page-title {
+        font-family: "Syne", sans-serif;
+        font-weight: 800;
+        font-size: 2rem;
+        margin-bottom: 6px;
+      }
+      .page-meta {
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+      h2 {
+        font-family: "Syne", sans-serif;
+        font-weight: 700;
+        font-size: 1rem;
+        margin: 28px 0 8px;
+        color: var(--text);
+        padding-top: 4px;
+        border-top: 1px solid var(--border);
+      }
+      h2:first-of-type {
+        border-top: none;
+        margin-top: 24px;
+      }
+      p {
+        color: var(--muted);
+        line-height: 1.75;
+        margin-bottom: 10px;
+        font-size: 0.91rem;
+      }
+      ul,
+      ol {
+        color: var(--muted);
+        line-height: 1.75;
+        margin: 6px 0 10px 22px;
+        font-size: 0.91rem;
+      }
+      li {
+        margin-bottom: 4px;
+      }
+      a {
+        color: var(--accent);
+      }
+      strong {
+        color: var(--text);
+        font-weight: 600;
+      }
+      .warn {
+        background: rgba(255, 101, 132, 0.07);
+        border: 1px solid rgba(255, 101, 132, 0.2);
+        border-radius: 12px;
+        padding: 14px 18px;
+        margin-bottom: 20px;
+        font-size: 0.88rem;
+        color: var(--text);
+        line-height: 1.6;
+      }
+      site-footer {
+        display: block;
+        text-align: center;
+        padding: 32px 0 0;
+        border-top: 1px solid var(--border);
+        margin-top: 40px;
+      }
+      site-footer a {
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 0.8rem;
+        margin: 0 10px;
+        transition: color 0.2s;
+      }
+      site-footer a:hover {
+        color: var(--text);
+      }
+      .copy {
+        color: var(--muted);
+        font-size: 0.75rem;
+        margin-top: 12px;
+      }
+      @media (max-width: 600px) {
+        .app {
+          padding: 16px 14px 48px;
+        }
+        header {
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          padding-bottom: 24px;
+          gap: 14px;
+        }
+        .nav-links {
+          justify-content: center;
+          gap: 16px;
+        }
+        .card {
+          padding: 22px 18px;
+        }
+        .page-title {
+          font-size: 1.45rem;
+        }
+        h2 {
+          font-size: 0.95rem;
+        }
+        site-footer {
+          padding-top: 24px;
+        }
+        site-footer a {
+          margin: 0 6px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="bg-orbs">
+      <div class="orb orb1"></div>
+      <div class="orb orb2"></div>
+      <div class="orb orb3"></div>
+    </div>
+
+    <div class="app">
+      <header>
+        <a href="/" class="logo">Send Master ✦</a>
+        <nav class="nav-links">
+          <a href="/">Home</a>
+          <a href="/about.html">About</a>
+          <a href="/contact.html">Contact</a>
+          <a href="/privacy.html">Privacy</a>
+        </nav>
+      </header>
+
+      <div class="card">
+        <div class="page-title">Service Terms</div>
+        <p class="page-meta">
+          Effective date: Dec 20, 2025 &nbsp;·&nbsp; Last updated: May 22, 2026
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="warn">
+          By using SendMaster you agree to these terms. If you do not agree,
+          please do not use the service.
+        </div>
+
+        <h2>1. Acceptance of Terms</h2>
+        <p>
+          These Terms of Service ("Terms") govern your use of the SendMaster
+          file-sharing service ("Service") operated by Master Brains Solutions
+          ("we", "us", or "our"). By accessing or using the Service you confirm
+          that you are at least 13 years old and agree to be bound by these
+          Terms.
+        </p>
+
+        <h2>2. Description of Service</h2>
+        <p>
+          SendMaster allows users to upload files and share them via a unique
+          link. Uploaded files are stored temporarily and automatically deleted
+          when the transfer link expires (default: 24 hours). The Service also
+          supports peer-to-peer LAN transfers between devices on the same local
+          network. No user account or registration is required.
+        </p>
+
+        <h2>3. Acceptable Use</h2>
+        <p>
+          You may only use the Service for lawful purposes. You agree not to
+          upload, share, or transmit content that:
+        </p>
+        <ul>
+          <li>Is illegal under any applicable law or regulation</li>
+          <li>
+            Infringes any copyright, trademark, trade secret, or other
+            intellectual property right of any person
+          </li>
+          <li>
+            Contains malware, viruses, ransomware, spyware, or any other
+            malicious code
+          </li>
+          <li>
+            Constitutes child sexual abuse material (CSAM) or exploitative
+            content involving minors
+          </li>
+          <li>Harasses, defames, or threatens any individual or group</li>
+          <li>
+            Violates the privacy of others, including sharing private images
+            without consent
+          </li>
+          <li>Facilitates fraud, phishing, or other deceptive practices</li>
+          <li>Is exported in violation of applicable export control laws</li>
+        </ul>
+        <p>
+          We reserve the right to remove any content and terminate access for
+          users who violate these terms, without prior notice.
+        </p>
+
+        <h2>4. File Expiry and Deletion</h2>
+        <p>
+          Files uploaded to SendMaster are temporary. All files and their
+          associated metadata are
+          <strong>automatically and permanently deleted</strong> upon link
+          expiry. We do not maintain backups of user-uploaded content. Do not
+          use SendMaster as a permanent storage solution. We accept no liability
+          for loss of files due to expiry or server failure.
+        </p>
+
+        <h2>5. No Registration — No Account Recovery</h2>
+        <p>
+          SendMaster does not use accounts or passwords. Once a transfer link
+          expires or a file is deleted, there is no way to recover that content.
+          Keep your share links safe for the duration you need them.
+        </p>
+
+        <h2>6. Intellectual Property</h2>
+        <p>
+          You retain all ownership rights to the content you upload. By
+          uploading content, you grant us a limited, non-exclusive, royalty-free
+          licence solely to store and transmit the content for the purpose of
+          providing the Service. This licence terminates automatically when the
+          file is deleted.
+        </p>
+        <p>
+          The SendMaster application, its design, code, and branding are the
+          property of Master Brains Solutions and are protected by applicable
+          intellectual property laws.
+        </p>
+
+        <h2>7. Advertisements</h2>
+        <p>
+          The Service may display third-party advertisements served by Google
+          AdSense or similar networks. These ads are provided by third parties
+          and we are not responsible for their content. Ad networks may use
+          cookies to serve personalised ads — see our
+          <a href="/privacy.html">Privacy Policy</a> for details.
+        </p>
+
+        <h2>8. Disclaimer of Warranties</h2>
+        <p>
+          The Service is provided <strong>"as is"</strong> and
+          <strong>"as available"</strong> without warranties of any kind, either
+          express or implied, including but not limited to implied warranties of
+          merchantability, fitness for a particular purpose, or
+          non-infringement. We do not warrant that the Service will be
+          uninterrupted, error-free, or free of viruses or other harmful
+          components.
+        </p>
+
+        <h2>9. Limitation of Liability</h2>
+        <p>
+          To the fullest extent permitted by applicable law, Master Brains
+          Solutions and its officers, employees, and agents shall not be liable
+          for any indirect, incidental, special, consequential, or punitive
+          damages arising from your use of or inability to use the Service,
+          including but not limited to loss of data, loss of profits, or loss of
+          goodwill, even if we have been advised of the possibility of such
+          damages.
+        </p>
+        <p>
+          Our total liability for any claim arising out of these Terms or the
+          Service shall not exceed USD $10.
+        </p>
+
+        <h2>10. Indemnification</h2>
+        <p>
+          You agree to indemnify and hold harmless Master Brains Solutions and
+          its officers, employees, and agents from and against any claims,
+          damages, losses, costs, and expenses (including reasonable legal fees)
+          arising from your violation of these Terms or your use of the Service.
+        </p>
+
+        <h2>11. DMCA / Copyright Takedown</h2>
+        <p>
+          If you believe that content available through the Service infringes
+          your copyright, please send a takedown notice to
+          <a href="#" data-email="abuse">—</a> with the following information:
+        </p>
+        <ol>
+          <li>
+            A description of the copyrighted work you claim has been infringed
+          </li>
+          <li>The URL of the infringing content on SendMaster</li>
+          <li>Your contact information (name, address, email, phone)</li>
+          <li>
+            A statement that you have a good faith belief the use is not
+            authorised
+          </li>
+          <li>
+            A statement that the information in the notice is accurate, under
+            penalty of perjury
+          </li>
+          <li>Your physical or electronic signature</li>
+        </ol>
+        <p>
+          We will respond to valid takedown requests promptly. Abuse of the
+          takedown process may result in legal liability.
+        </p>
+
+        <h2>12. Changes to These Terms</h2>
+        <p>
+          We may modify these Terms at any time. Changes will be effective upon
+          posting the updated Terms to this page with a new effective date.
+          Continued use of the Service after changes are posted constitutes
+          acceptance of the revised Terms.
+        </p>
+
+        <h2>13. Governing Law</h2>
+        <p>
+          These Terms are governed by and construed in accordance with
+          applicable law. Any disputes shall be resolved in the courts of the
+          jurisdiction in which Master Brains Solutions operates.
+        </p>
+
+        <h2>14. Contact</h2>
+        <p>
+          For questions about these Terms, contact us at
+          <a href="#" data-email="legal">—</a> or visit our
+          <a href="/contact.html">Contact page</a>.
+        </p>
+      </div>
+
+      <site-footer>
+        <a href="/">Home</a>
+        <a href="/about.html">About</a>
+        <a href="/privacy.html">Privacy Policy</a>
+        <a href="/terms.html">Terms of Service</a>
+        <a href="/contact.html">Contact</a>
+        <p class="copy">
+          &copy; 2026 Master Brains Solutions. All rights reserved.
+        </p>
+      </site-footer>
+    </div>
+    <script>
+      fetch("/config.json")
+        .then(function (r) {
+          return r.json();
+        })
+        .then(function (cfg) {
+          var em = (cfg && cfg.emails) || {};
+          document.querySelectorAll("a[data-email]").forEach(function (el) {
+            var addr = em[el.dataset.email] || "";
+            if (addr) {
+              el.href = "mailto:" + addr;
+              el.textContent = addr;
+            }
+          });
+        })
+        .catch(function () {});
+    </script>
+  </body>
+</html>

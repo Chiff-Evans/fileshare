@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contact — SendMaster</title>
+  <meta name="description" content="Contact the SendMaster team — support, abuse reports, and general enquiries." />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0f; --surface: #13131a; --surface2: #1c1c28;
+      --border: rgba(255,255,255,0.07); --accent: #6c63ff;
+      --accent2: #ff6584; --accent3: #43e97b;
+      --text: #f0f0f8; --muted: #6b6b80;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: "DM Sans", sans-serif; min-height: 100vh; }
+    .bg-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.12; animation: float 12s ease-in-out infinite; }
+    .orb1 { width: 500px; height: 500px; background: var(--accent); top: -150px; left: -150px; }
+    .orb2 { width: 400px; height: 400px; background: var(--accent2); bottom: -100px; right: -100px; animation-delay: -4s; }
+    .orb3 { width: 300px; height: 300px; background: var(--accent3); top: 40%; left: 60%; animation-delay: -8s; }
+    @keyframes float { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(20px,-20px) scale(1.05); } 66% { transform: translate(-15px,15px) scale(0.95); } }
+    .app { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 24px 20px 60px; }
+    header { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 32px; flex-wrap: wrap; gap: 12px; }
+    .logo { font-family: "Syne", sans-serif; font-weight: 800; font-size: 1.4rem; background: linear-gradient(135deg, var(--accent), var(--accent2)); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; gap: 20px; flex-wrap: wrap; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.88rem; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text); }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 36px 40px; box-shadow: 0 8px 40px rgba(0,0,0,0.5); margin-bottom: 20px; }
+    .page-title { font-family: "Syne", sans-serif; font-weight: 800; font-size: 2rem; margin-bottom: 6px; }
+    .page-sub { color: var(--muted); font-size: 0.92rem; line-height: 1.6; }
+    h2 { font-family: "Syne", sans-serif; font-weight: 700; font-size: 1rem; margin-bottom: 16px; }
+    p { color: var(--muted); line-height: 1.75; margin-bottom: 10px; font-size: 0.91rem; }
+    a { color: var(--accent); }
+    strong { color: var(--text); }
+    .contact-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 4px; }
+    .contact-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; padding: 22px; display: flex; gap: 16px; align-items: flex-start; }
+    .contact-icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.2rem; }
+    .contact-icon.purple { background: rgba(108,99,255,0.15); }
+    .contact-icon.red { background: rgba(255,101,132,0.12); }
+    .contact-icon.green { background: rgba(67,233,123,0.1); }
+    .contact-icon.blue { background: rgba(56,249,215,0.1); }
+    .contact-label { font-family: "Syne", sans-serif; font-weight: 700; font-size: 0.88rem; margin-bottom: 4px; }
+    .contact-value { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+    .contact-value a { color: var(--accent); text-decoration: none; }
+    .contact-value a:hover { text-decoration: underline; }
+    /* Form */
+    .form-group { margin-bottom: 18px; }
+    label { display: block; font-size: 0.85rem; font-weight: 500; color: var(--text); margin-bottom: 7px; }
+    input, select, textarea {
+      width: 100%; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 12px; padding: 12px 16px; color: var(--text);
+      font-family: "DM Sans", sans-serif; font-size: 0.9rem;
+      transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: rgba(108,99,255,0.5);
+      box-shadow: 0 0 0 3px rgba(108,99,255,0.12);
+    }
+    input::placeholder, textarea::placeholder { color: var(--muted); }
+    textarea { resize: vertical; min-height: 130px; }
+    select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6b80' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px; }
+    select option { background: var(--surface2); }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .btn-submit { width: 100%; padding: 14px; background: linear-gradient(135deg, var(--accent), #9b8eff); color: white; border: none; border-radius: 12px; font-family: "Syne", sans-serif; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: opacity 0.2s, transform 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-submit:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-submit:active { transform: translateY(0); }
+    #formSuccess { display: none; background: rgba(67,233,123,0.08); border: 1px solid rgba(67,233,123,0.2); border-radius: 12px; padding: 20px; text-align: center; color: var(--accent3); font-size: 0.92rem; line-height: 1.6; }
+    site-footer { display: block; text-align: center; padding: 32px 0 0; border-top: 1px solid var(--border); margin-top: 40px; }
+    site-footer a { color: var(--muted); text-decoration: none; font-size: 0.8rem; margin: 0 10px; transition: color 0.2s; }
+    site-footer a:hover { color: var(--text); }
+    .copy { color: var(--muted); font-size: 0.75rem; margin-top: 12px; }
+    @media (max-width: 600px) {
+      .app { padding: 16px 14px 48px; }
+      header { flex-direction: column; align-items: center; justify-content: center; text-align: center; padding-bottom: 24px; gap: 14px; }
+      .nav-links { justify-content: center; gap: 16px; }
+      .card { padding: 22px 18px; }
+      .page-title { font-size: 1.45rem; }
+      .contact-grid { grid-template-columns: 1fr; }
+      .contact-item { padding: 18px 16px; }
+      .form-row { grid-template-columns: 1fr; }
+      .btn-submit { font-size: 0.9rem; padding: 13px; }
+      site-footer { padding-top: 24px; }
+      site-footer a { margin: 0 6px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-orbs">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+  </div>
+
+  <div class="app">
+    <header>
+      <a href="/" class="logo">Send Master ✦</a>
+      <nav class="nav-links">
+        <a href="/">Home</a>
+        <a href="/about.html">About</a>
+        <a href="/privacy.html">Privacy</a>
+        <a href="/terms.html">Terms</a>
+      </nav>
+    </header>
+
+    <!-- Page header -->
+    <div class="card">
+      <div class="page-title">Get in Touch</div>
+      <p class="page-sub">Questions, feedback, bug reports, or abuse concerns — we read everything and respond as soon as we can.</p>
+    </div>
+
+    <!-- Contact channels -->
+    <div class="card">
+      <h2>Contact Channels</h2>
+      <div class="contact-grid">
+        <div class="contact-item">
+          <div class="contact-icon purple">&#x2709;&#xFE0F;</div>
+          <div>
+            <div class="contact-label">General Enquiries</div>
+            <div class="contact-value"><a href="#" data-email="general">—</a></div>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-icon red">&#x26A0;&#xFE0F;</div>
+          <div>
+            <div class="contact-label">Abuse &amp; Takedowns</div>
+            <div class="contact-value"><a href="#" data-email="abuse">—</a></div>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-icon green">&#x1F512;</div>
+          <div>
+            <div class="contact-label">Privacy &amp; Data</div>
+            <div class="contact-value"><a href="#" data-email="privacy">—</a></div>
+          </div>
+        </div>
+        <div class="contact-item">
+          <div class="contact-icon blue">&#x1F41B;</div>
+          <div>
+            <div class="contact-label">Bug Reports</div>
+            <div class="contact-value">Use the form below or email <a href="#" data-email="general" id="bugEmail">—</a></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contact form -->
+    <div class="card">
+      <h2>Send a Message</h2>
+      <form id="contactForm" novalidate>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="fname">Your Name</label>
+            <input type="text" id="fname" name="name" placeholder="Jane Smith" required />
+          </div>
+          <div class="form-group">
+            <label for="femail">Email Address</label>
+            <input type="email" id="femail" name="email" placeholder="jane@example.com" required />
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="fsubject">Subject</label>
+          <select id="fsubject" name="subject">
+            <option value="general">General enquiry</option>
+            <option value="bug">Bug report</option>
+            <option value="abuse">Abuse / takedown request</option>
+            <option value="privacy">Privacy / data request</option>
+            <option value="feature">Feature suggestion</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="fmessage">Message</label>
+          <textarea id="fmessage" name="message" placeholder="Describe your question or issue in detail…" required></textarea>
+        </div>
+        <button type="submit" class="btn-submit">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
+          Send Message
+        </button>
+      </form>
+      <div id="formSuccess">
+        <strong>Message sent!</strong><br/>
+        Thank you for reaching out. We typically reply within 1–2 business days.
+      </div>
+    </div>
+
+    <site-footer>
+      <a href="/">Home</a>
+      <a href="/about.html">About</a>
+      <a href="/privacy.html">Privacy Policy</a>
+      <a href="/terms.html">Terms of Service</a>
+      <a href="/contact.html">Contact</a>
+      <p class="copy">&copy; 2026 Master Brains Solutions. All rights reserved.</p>
+    </site-footer>
+  </div>
+
+  <script>
+    var _generalEmail = '';
+
+    fetch('/config.json').then(function(r) { return r.json(); }).then(function(cfg) {
+      var em = (cfg && cfg.emails) || {};
+      _generalEmail = em.general || '';
+      document.querySelectorAll('a[data-email]').forEach(function(el) {
+        var addr = em[el.dataset.email] || '';
+        if (addr) { el.href = 'mailto:' + addr; el.textContent = addr; }
+      });
+    }).catch(function() {});
+
+    document.getElementById('contactForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var name    = document.getElementById('fname').value.trim();
+      var email   = document.getElementById('femail').value.trim();
+      var message = document.getElementById('fmessage').value.trim();
+
+      if (!name || !email || !message) {
+        alert('Please fill in your name, email, and message.');
+        return;
+      }
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        alert('Please enter a valid email address.');
+        return;
+      }
+
+      var subEl   = document.getElementById('fsubject');
+      var subLabel = subEl.options[subEl.selectedIndex].text;
+      var body    = encodeURIComponent('Name: ' + name + '\nEmail: ' + email + '\n\n' + message);
+      var to      = _generalEmail || 'contact@sendmaster.app';
+      window.location.href = 'mailto:' + to
+        + '?subject=' + encodeURIComponent('[SendMaster] ' + subLabel)
+        + '&body=' + body;
+
+      document.getElementById('contactForm').style.display = 'none';
+      document.getElementById('formSuccess').style.display = 'block';
+    });
+  </script>
+</body>
+</html>

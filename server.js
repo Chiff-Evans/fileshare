@@ -454,6 +454,12 @@ app.get("/config.json", (req, res) => {
     localIP: getLocalIP(),
     showStats: process.env.SHOW_STATS !== "false",
     maxFileSize: MAX_FILE_SIZE,
+    emails: {
+      general: process.env.EMAIL_GENERAL || "",
+      abuse:   process.env.EMAIL_ABUSE   || "",
+      privacy: process.env.EMAIL_PRIVACY || "",
+      legal:   process.env.EMAIL_LEGAL   || "",
+    },
   });
 });
 

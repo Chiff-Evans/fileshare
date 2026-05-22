@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — SendMaster</title>
+  <meta name="description" content="SendMaster Privacy Policy — how we handle your data." />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0f; --surface: #13131a; --surface2: #1c1c28;
+      --border: rgba(255,255,255,0.07); --accent: #6c63ff;
+      --accent2: #ff6584; --accent3: #43e97b;
+      --text: #f0f0f8; --muted: #6b6b80;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: "DM Sans", sans-serif; min-height: 100vh; }
+    .bg-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.12; animation: float 12s ease-in-out infinite; }
+    .orb1 { width: 500px; height: 500px; background: var(--accent); top: -150px; left: -150px; }
+    .orb2 { width: 400px; height: 400px; background: var(--accent2); bottom: -100px; right: -100px; animation-delay: -4s; }
+    .orb3 { width: 300px; height: 300px; background: var(--accent3); top: 40%; left: 60%; animation-delay: -8s; }
+    @keyframes float { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(20px,-20px) scale(1.05); } 66% { transform: translate(-15px,15px) scale(0.95); } }
+    .app { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 24px 20px 60px; }
+    header { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 32px; flex-wrap: wrap; gap: 12px; }
+    .logo { font-family: "Syne", sans-serif; font-weight: 800; font-size: 1.4rem; background: linear-gradient(135deg, var(--accent), var(--accent2)); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; gap: 20px; flex-wrap: wrap; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.88rem; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text); }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 36px 40px; box-shadow: 0 8px 40px rgba(0,0,0,0.5); margin-bottom: 20px; }
+    .page-title { font-family: "Syne", sans-serif; font-weight: 800; font-size: 2rem; margin-bottom: 6px; }
+    .page-meta { color: var(--muted); font-size: 0.82rem; margin-bottom: 0; }
+    h2 { font-family: "Syne", sans-serif; font-weight: 700; font-size: 1rem; margin: 28px 0 8px; color: var(--text); padding-top: 4px; border-top: 1px solid var(--border); }
+    h2:first-of-type { border-top: none; margin-top: 24px; }
+    p { color: var(--muted); line-height: 1.75; margin-bottom: 10px; font-size: 0.91rem; }
+    ul, ol { color: var(--muted); line-height: 1.75; margin: 6px 0 10px 22px; font-size: 0.91rem; }
+    li { margin-bottom: 4px; }
+    a { color: var(--accent); }
+    strong { color: var(--text); font-weight: 600; }
+    .highlight { background: rgba(108,99,255,0.08); border: 1px solid rgba(108,99,255,0.18); border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; font-size: 0.88rem; color: var(--text); line-height: 1.6; }
+    site-footer { display: block; text-align: center; padding: 32px 0 0; border-top: 1px solid var(--border); margin-top: 40px; }
+    site-footer a { color: var(--muted); text-decoration: none; font-size: 0.8rem; margin: 0 10px; transition: color 0.2s; }
+    site-footer a:hover { color: var(--text); }
+    .copy { color: var(--muted); font-size: 0.75rem; margin-top: 12px; }
+    @media (max-width: 600px) {
+      .app { padding: 16px 14px 48px; }
+      header { flex-direction: column; align-items: center; justify-content: center; text-align: center; padding-bottom: 24px; gap: 14px; }
+      .nav-links { justify-content: center; gap: 16px; }
+      .card { padding: 22px 18px; }
+      .page-title { font-size: 1.45rem; }
+      h2 { font-size: 0.95rem; }
+      site-footer { padding-top: 24px; }
+      site-footer a { margin: 0 6px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-orbs">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+  </div>
+
+  <div class="app">
+    <header>
+      <a href="/" class="logo">Send Master ✦</a>
+      <nav class="nav-links">
+        <a href="/">Home</a>
+        <a href="/about.html">About</a>
+        <a href="/contact.html">Contact</a>
+        <a href="/terms.html">Terms</a>
+      </nav>
+    </header>
+
+    <div class="card">
+      <div class="page-title">Privacy Policy</div>
+      <p class="page-meta">Effective date: May 22, 2026 &nbsp;·&nbsp; Last updated: May 22, 2026</p>
+    </div>
+
+    <div class="card">
+      <div class="highlight">
+        Short version: SendMaster does not require registration, does not track you personally, and automatically deletes all uploaded files after 24 hours. We do not sell your data.
+      </div>
+
+      <h2>1. Who We Are</h2>
+      <p>SendMaster ("we", "our", or "us") is a file-sharing service operated by Master Brains Solutions. Our service is accessible at <strong>sendmaster.masterbrainssolutions.com</strong> and related domains. Questions about this policy can be sent to <a href="#" data-email="privacy">—</a>.</p>
+
+      <h2>2. Information We Collect</h2>
+      <p>We collect only what is necessary to operate the service:</p>
+      <ul>
+        <li><strong>Uploaded files and metadata</strong> — When you upload a file, we store the file and its metadata (filename, file size, MIME type, upload timestamp, expiry timestamp) to make it available for download. All files and their metadata are permanently and automatically deleted when the transfer link expires (default: 24 hours).</li>
+        <li><strong>Aggregate usage counters</strong> — We maintain a count of total uploads, downloads, and LAN transfers as all-time statistical figures. These are aggregate numbers only and are not linked to any individual user.</li>
+        <li><strong>Server access logs</strong> — Like every web server, ours automatically records standard HTTP access logs, which may include your IP address, browser user-agent string, pages visited, and timestamps. These logs are used solely for security monitoring, abuse prevention, and operational diagnostics. They are rotated regularly and not shared with third parties for marketing purposes.</li>
+      </ul>
+      <p>We do <strong>not</strong> require registration, email addresses, or any form of user account to use SendMaster.</p>
+
+      <h2>3. Peer-to-Peer (LAN) Transfers</h2>
+      <p>When you use the LAN transfer feature, a WebRTC peer-to-peer connection is established directly between two devices on the same local network. File data is transmitted device-to-device and <strong>does not pass through our servers</strong>. We use a signalling server (PeerJS) only to establish the initial connection handshake; it does not receive your file content.</p>
+
+      <h2>4. Cookies and Local Storage</h2>
+      <p>SendMaster itself does not set any cookies for tracking or authentication purposes. However:</p>
+      <ul>
+        <li><strong>Service Worker cache</strong> — Your browser may cache application shell files (HTML, icons) locally to support offline use. This cache is stored in your browser and is not accessible to us.</li>
+        <li><strong>Google AdSense</strong> — This site may display advertisements served by Google AdSense. Google uses cookies, including the DoubleClick cookie, to serve personalised ads based on your prior visits to this and other websites. You can opt out of personalised advertising by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener">Google Ads Settings</a> or by visiting <a href="https://www.aboutads.info/choices/" target="_blank" rel="noopener">aboutads.info</a>. For more information on how Google uses data when you use our site, see <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">Google's Privacy & Terms</a>.</li>
+      </ul>
+
+      <h2>5. Third-Party Services</h2>
+      <p>We use the following third-party services that may collect data independently:</p>
+      <ul>
+        <li><strong>Google Fonts</strong> — Fonts are loaded from Google's CDN (<code>fonts.googleapis.com</code>). Google may log requests including your IP address. See <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's Privacy Policy</a>.</li>
+        <li><strong>cdnjs / Cloudflare</strong> — The PeerJS library is loaded from Cloudflare's CDN. Cloudflare may log requests. See <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Cloudflare's Privacy Policy</a>.</li>
+        <li><strong>QR Code API (api.qrserver.com)</strong> — When you share a file link, a QR code image is generated by a third-party API. The share URL is sent to this service to generate the image. See <a href="https://goqr.me/privacy/" target="_blank" rel="noopener">goQR Privacy Policy</a>.</li>
+        <li><strong>Google AdSense</strong> — See section 4 above.</li>
+      </ul>
+
+      <h2>6. How We Use Information</h2>
+      <ul>
+        <li>To store and serve your uploaded files during the active transfer window</li>
+        <li>To display aggregate site statistics (total uploads, downloads, LAN transfers)</li>
+        <li>To monitor for abuse, malware uploads, and Terms of Service violations</li>
+        <li>To diagnose server errors and maintain service reliability</li>
+      </ul>
+
+      <h2>7. Data Retention</h2>
+      <ul>
+        <li><strong>Files:</strong> Automatically deleted when the transfer link expires (24 hours by default). Unclaimed files are also purged by a scheduled cleanup task.</li>
+        <li><strong>Access logs:</strong> Retained for up to 30 days for security purposes, then deleted.</li>
+        <li><strong>Aggregate counters:</strong> Retained indefinitely as they contain no personal data.</li>
+      </ul>
+
+      <h2>8. Data Sharing and Disclosure</h2>
+      <p>We do not sell, rent, or trade personal information. We may disclose information only:</p>
+      <ul>
+        <li>If required by law, court order, or government authority</li>
+        <li>To protect the rights, property, or safety of SendMaster, our users, or the public</li>
+        <li>In connection with a merger, acquisition, or sale of assets (you will be notified)</li>
+      </ul>
+
+      <h2>9. Security</h2>
+      <p>Files are stored on our server with access restricted to valid, unguessable transfer tokens. We support HTTPS to encrypt data in transit. However, no system is perfectly secure, and we cannot guarantee absolute protection of data transmitted over the internet.</p>
+
+      <h2>10. Children's Privacy</h2>
+      <p>SendMaster is not directed at children under the age of 13. We do not knowingly collect personal information from children. If you believe a child has provided personal information through our service, please contact us and we will remove it promptly.</p>
+
+      <h2>11. Your Rights</h2>
+      <p>Depending on your jurisdiction, you may have rights to access, correct, or request deletion of personal data we hold about you. Since we do not create user accounts, the primary data we may hold is server access logs containing your IP address. To request deletion, contact us at <a href="#" data-email="privacy">—</a>.</p>
+
+      <h2>12. Changes to This Policy</h2>
+      <p>We may update this Privacy Policy from time to time. Material changes will be reflected in an updated effective date at the top of this page. Continued use of the service after changes constitutes acceptance.</p>
+
+      <h2>13. Contact</h2>
+      <p>For privacy-related questions or requests, email <a href="#" data-email="privacy">—</a> or visit our <a href="/contact.html">Contact page</a>.</p>
+    </div>
+
+    <site-footer>
+      <a href="/">Home</a>
+      <a href="/about.html">About</a>
+      <a href="/privacy.html">Privacy Policy</a>
+      <a href="/terms.html">Terms of Service</a>
+      <a href="/contact.html">Contact</a>
+      <p class="copy">&copy; 2026 Master Brains Solutions. All rights reserved.</p>
+    </site-footer>
+  </div>
+  <script>
+    fetch('/config.json').then(function(r) { return r.json(); }).then(function(cfg) {
+      var em = (cfg && cfg.emails) || {};
+      document.querySelectorAll('a[data-email]').forEach(function(el) {
+        var addr = em[el.dataset.email] || '';
+        if (addr) { el.href = 'mailto:' + addr; el.textContent = addr; }
+      });
+    }).catch(function() {});
+  </script>
+</body>
+</html>
