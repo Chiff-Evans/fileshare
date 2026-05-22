@@ -45,7 +45,11 @@ self.addEventListener('fetch', e => {
   if (request.mode === 'navigate') {
     e.respondWith(
       fetch(request)
-        .then(res => { caches.open(CACHE).then(c => c.put(request, res.clone())); return res; })
+        .then(res => {
+          const clone = res.clone(); // clone synchronously before any async work
+          caches.open(CACHE).then(c => c.put(request, clone));
+          return res;
+        })
         .catch(() => caches.match(request) || caches.match('/'))
     );
     return;
@@ -54,7 +58,10 @@ self.addEventListener('fetch', e => {
   // Everything else: cache-first
   e.respondWith(
     caches.match(request).then(cached => cached || fetch(request).then(res => {
-      if (res.ok) caches.open(CACHE).then(c => c.put(request, res.clone()));
+      if (res.ok) {
+        const clone = res.clone(); // clone synchronously before any async work
+        caches.open(CACHE).then(c => c.put(request, clone));
+      }
       return res;
     }))
   );
