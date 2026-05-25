@@ -5,10 +5,6 @@ const SHELL = [
   "/manifest.json",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
-  // "/about.html",
-  // "/privacy.html",
-  // "/terms.html",
-  // "/contact.html",
 ];
 
 self.addEventListener("install", (e) => {
