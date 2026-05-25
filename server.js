@@ -197,6 +197,7 @@ const upload = multer({
 
 // ─── Express app ──────────────────────────────────────────────────────────────
 const app = express();
+app.set("trust proxy", 1); // trust X-Forwarded-Proto from Apache/nginx
 app.use(express.json());
 
 // ─── GET /d/:token — serve index.html (JS reads token from pathname) ─────────
@@ -275,7 +276,8 @@ app.post("/upload", prepareUpload, checkContentLength, (req, res) => {
           `UPDATE stats SET total_uploads = total_uploads + 1 WHERE id = 1`,
         );
 
-        const downloadUrl = `${req.protocol}://${req.get("host")}/d/${token}`;
+        const proto = req.headers["x-forwarded-proto"]?.split(",")[0].trim() || req.protocol;
+        const downloadUrl = `${proto}://${req.get("host")}/d/${token}`;
         return res.json({
           token,
           downloadUrl,
