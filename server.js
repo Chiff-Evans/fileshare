@@ -1,4 +1,13 @@
 require("dotenv").config();
+
+// Re-read .env whenever it is saved — no server restart needed
+const dotenv = require("dotenv");
+const envPath = require("path").resolve(__dirname, ".env");
+require("fs").watch(envPath, () => {
+  dotenv.config({ path: envPath, override: true });
+  console.log(".env reloaded");
+});
+
 const express = require("express");
 const { ExpressPeerServer } = require("peer");
 const https = require("https");
@@ -13,6 +22,7 @@ const cron = require("node-cron");
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 9999;
+const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE, 10) || 1 * 1024 * 1024 * 1024;
 const DB_HOST = process.env.DB_HOST || "localhost";
 const DB_USER = process.env.DB_USER || "root";
 const DB_PASS = process.env.DB_PASS || "1234";
@@ -74,6 +84,19 @@ async function initDB() {
         FOREIGN KEY (upload_id) REFERENCES uploads(id) ON DELETE CASCADE
       )
     `);
+    await conn.query(`
+      CREATE TABLE IF NOT EXISTS stats (
+        id INT PRIMARY KEY DEFAULT 1,
+        total_uploads BIGINT UNSIGNED DEFAULT 0,
+        total_downloads BIGINT UNSIGNED DEFAULT 0,
+        total_lan_transfers BIGINT UNSIGNED DEFAULT 0
+      )
+    `);
+    await conn.query(`INSERT IGNORE INTO stats (id) VALUES (1)`);
+    // Migration: add lan column for databases created before this version
+    await conn.query(
+      `ALTER TABLE stats ADD COLUMN IF NOT EXISTS total_lan_transfers BIGINT UNSIGNED DEFAULT 0`
+    ).catch(() => {});
     console.log("Database tables ready.");
   } finally {
     conn.release();
@@ -112,6 +135,13 @@ async function cleanupExpired() {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+function fmtBytes(b) {
+  if (b >= 1024 ** 3) return (b / 1024 ** 3).toFixed(1) + " GB";
+  if (b >= 1024 ** 2) return (b / 1024 ** 2).toFixed(1) + " MB";
+  if (b >= 1024)      return (b / 1024).toFixed(1) + " KB";
+  return b + " B";
+}
+
 function getLocalIP() {
   const ifaces = os.networkInterfaces();
   for (const name of Object.keys(ifaces)) {
@@ -129,11 +159,22 @@ function sanitizeFilename(name) {
 }
 
 // ─── Multer setup ─────────────────────────────────────────────────────────────
-// Middleware to generate upload token and create directory before multer runs
 function prepareUpload(req, res, next) {
   req.uploadToken = uuidv4();
   const dir = path.join(__dirname, "uploads", req.uploadToken);
   fs.mkdirSync(dir, { recursive: true });
+  next();
+}
+
+// Fast pre-check using Content-Length before any bytes hit disk.
+// Multipart overhead is tiny (< 1 KB per file) so this is a safe early guard.
+function checkContentLength(req, res, next) {
+  const cl = parseInt(req.headers["content-length"], 10);
+  if (!isNaN(cl) && cl > MAX_FILE_SIZE) {
+    return res.status(413).json({
+      error: `Upload exceeds the ${fmtBytes(MAX_FILE_SIZE)} limit.`,
+    });
+  }
   next();
 }
 
@@ -148,7 +189,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 * 1024 }, // 5 GB
+  limits: { fileSize: MAX_FILE_SIZE },
 });
 
 // ─── Express app ──────────────────────────────────────────────────────────────
@@ -161,57 +202,86 @@ app.get("/d/:token", (req, res) => {
 });
 
 // ─── POST /upload ─────────────────────────────────────────────────────────────
-app.post("/upload", prepareUpload, upload.array("files"), async (req, res) => {
-  try {
-    if (!req.files || req.files.length === 0) {
-      return res.status(400).json({ error: "No files provided." });
+app.post("/upload", prepareUpload, checkContentLength, (req, res) => {
+  // Use callback form so multer errors (e.g. LIMIT_FILE_SIZE) are catchable here.
+  upload.array("files")(req, res, async (multerErr) => {
+    const cleanupDir = () => {
+      const dir = path.join(__dirname, "uploads", req.uploadToken);
+      try { fs.rmSync(dir, { recursive: true, force: true }); } catch (_) {}
+    };
+
+    if (multerErr) {
+      cleanupDir();
+      if (multerErr.code === "LIMIT_FILE_SIZE") {
+        return res.status(413).json({
+          error: `Each file must be under ${fmtBytes(MAX_FILE_SIZE)}.`,
+        });
+      }
+      console.error("Upload error:", multerErr);
+      return res.status(500).json({ error: "Upload failed." });
     }
 
-    const token = req.uploadToken;
-    const uploaderIp =
-      req.headers["x-forwarded-for"]?.split(",")[0].trim() ||
-      req.socket.remoteAddress ||
-      null;
-
-    const totalSize = req.files.reduce((acc, f) => acc + f.size, 0);
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-    const conn = await pool.getConnection();
     try {
-      const [uploadResult] = await conn.query(
-        `INSERT INTO uploads (token, expires_at, uploader_ip, total_size)
-         VALUES (?, ?, ?, ?)`,
-        [token, expiresAt, uploaderIp, totalSize],
-      );
-      const uploadId = uploadResult.insertId;
-
-      for (const file of req.files) {
-        await conn.query(
-          `INSERT INTO files (upload_id, original_name, stored_name, size, mime_type)
-           VALUES (?, ?, ?, ?, ?)`,
-          [
-            uploadId,
-            file.originalname,
-            file.filename,
-            file.size,
-            file.mimetype || "application/octet-stream",
-          ],
-        );
+      if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ error: "No files provided." });
       }
 
-      const downloadUrl = `${req.protocol}://${req.get("host")}/d/${token}`;
-      return res.json({
-        token,
-        downloadUrl,
-        expiresAt: expiresAt.toISOString(),
-      });
-    } finally {
-      conn.release();
+      // Definitive total-size guard (Content-Length check above is just a fast pre-filter)
+      const totalSize = req.files.reduce((acc, f) => acc + f.size, 0);
+      if (totalSize > MAX_FILE_SIZE) {
+        cleanupDir();
+        return res.status(413).json({
+          error: `Total size ${fmtBytes(totalSize)} exceeds the ${fmtBytes(MAX_FILE_SIZE)} limit.`,
+        });
+      }
+
+      const token = req.uploadToken;
+      const uploaderIp =
+        req.headers["x-forwarded-for"]?.split(",")[0].trim() ||
+        req.socket.remoteAddress ||
+        null;
+
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+      const conn = await pool.getConnection();
+      try {
+        const [uploadResult] = await conn.query(
+          `INSERT INTO uploads (token, expires_at, uploader_ip, total_size)
+           VALUES (?, ?, ?, ?)`,
+          [token, expiresAt, uploaderIp, totalSize],
+        );
+        const uploadId = uploadResult.insertId;
+
+        for (const file of req.files) {
+          await conn.query(
+            `INSERT INTO files (upload_id, original_name, stored_name, size, mime_type)
+             VALUES (?, ?, ?, ?, ?)`,
+            [
+              uploadId,
+              file.originalname,
+              file.filename,
+              file.size,
+              file.mimetype || "application/octet-stream",
+            ],
+          );
+        }
+
+        await conn.query(`UPDATE stats SET total_uploads = total_uploads + 1 WHERE id = 1`);
+
+        const downloadUrl = `${req.protocol}://${req.get("host")}/d/${token}`;
+        return res.json({
+          token,
+          downloadUrl,
+          expiresAt: expiresAt.toISOString(),
+        });
+      } finally {
+        conn.release();
+      }
+    } catch (err) {
+      console.error("Upload error:", err);
+      return res.status(500).json({ error: "Upload failed." });
     }
-  } catch (err) {
-    console.error("Upload error:", err);
-    return res.status(500).json({ error: "Upload failed." });
-  }
+  });
 });
 
 // ─── GET /d/:token/info ───────────────────────────────────────────────────────
@@ -307,6 +377,7 @@ app.get("/d/:token/file/:fileId", async (req, res) => {
       "UPDATE uploads SET download_count = download_count + 1 WHERE id = ?",
       [uploadRecord.id],
     );
+    await conn.query(`UPDATE stats SET total_downloads = total_downloads + 1 WHERE id = 1`);
 
     const stat = fs.statSync(filePath);
     res.setHeader(
@@ -329,6 +400,39 @@ app.get("/d/:token/file/:fileId", async (req, res) => {
   }
 });
 
+// ─── GET /stats ───────────────────────────────────────────────────────────────
+app.get("/stats", async (req, res) => {
+  try {
+    const [rows] = await pool.query(
+      "SELECT total_uploads, total_downloads, total_lan_transfers FROM stats WHERE id = 1"
+    );
+    const row = rows[0] || {};
+    res.set('Cache-Control', 'no-store');
+    // parseInt(String(...)) safely handles BigInt, string, and number values
+    res.json({
+      totalUploads:      parseInt(String(row.total_uploads      ?? 0), 10) || 0,
+      totalDownloads:    parseInt(String(row.total_downloads    ?? 0), 10) || 0,
+      totalLanTransfers: parseInt(String(row.total_lan_transfers ?? 0), 10) || 0,
+    });
+  } catch (err) {
+    console.error("Stats error:", err.message);
+    res.json({ totalUploads: 0, totalDownloads: 0, totalLanTransfers: 0 });
+  }
+});
+
+// ─── POST /stats/lan-transfer ─────────────────────────────────────────────────
+app.post("/stats/lan-transfer", async (req, res) => {
+  try {
+    await pool.query(
+      "UPDATE stats SET total_lan_transfers = total_lan_transfers + 1 WHERE id = 1"
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error("LAN transfer stats error:", err.message);
+    res.json({ ok: false });
+  }
+});
+
 // ─── GET /config.json ─────────────────────────────────────────────────────────
 app.get("/config.json", (req, res) => {
   // Use the external-facing port (from Host header), not the internal PORT.
@@ -341,12 +445,21 @@ app.get("/config.json", (req, res) => {
     ? parseInt(hostHeader.split(":")[1], 10)
     : proto === "https" ? 443 : 80;
 
+  res.set('Cache-Control', 'no-store');
   res.json({
     peerHost: process.env.PEER_HOST || null,
     peerPort: externalPort,
     peerPath: "/",
     secure: proto === "https",
     localIP: getLocalIP(),
+    showStats: process.env.SHOW_STATS !== "false",
+    maxFileSize: MAX_FILE_SIZE,
+    emails: {
+      general: process.env.EMAIL_GENERAL || "",
+      abuse:   process.env.EMAIL_ABUSE   || "",
+      privacy: process.env.EMAIL_PRIVACY || "",
+      legal:   process.env.EMAIL_LEGAL   || "",
+    },
   });
 });
 

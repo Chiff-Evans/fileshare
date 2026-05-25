@@ -8,7 +8,8 @@
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
       "Bash(git check-ignore *)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(node -e ' *)"
     ]
   }
 }
