@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>File Sharing Tips &amp; Guides — SendMaster Blog</title>
+  <meta name="description" content="Practical guides on sharing large files, LAN transfers, privacy, and getting the most out of SendMaster." />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a0f; --surface: #13131a; --surface2: #1c1c28;
+      --border: rgba(255,255,255,0.07); --accent: #6c63ff;
+      --accent2: #ff6584; --accent3: #43e97b;
+      --text: #f0f0f8; --muted: #6b6b80;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: "DM Sans", sans-serif; min-height: 100vh; }
+    .bg-orbs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.12; animation: float 12s ease-in-out infinite; }
+    .orb1 { width: 500px; height: 500px; background: var(--accent); top: -150px; left: -150px; }
+    .orb2 { width: 400px; height: 400px; background: var(--accent2); bottom: -100px; right: -100px; animation-delay: -4s; }
+    .orb3 { width: 300px; height: 300px; background: var(--accent3); top: 40%; left: 60%; animation-delay: -8s; }
+    @keyframes float { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(20px,-20px) scale(1.05); } 66% { transform: translate(-15px,15px) scale(0.95); } }
+    .app { position: relative; z-index: 1; max-width: 860px; margin: 0 auto; padding: 24px 20px 60px; }
+    header { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 32px; flex-wrap: wrap; gap: 12px; }
+    .logo { font-family: "Syne", sans-serif; font-weight: 800; font-size: 1.4rem; background: linear-gradient(135deg, var(--accent), var(--accent2)); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-decoration: none; }
+    .nav-links { display: flex; gap: 20px; flex-wrap: wrap; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.88rem; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--text); }
+
+    /* Page hero */
+    .page-hero { text-align: center; padding: 32px 0 40px; }
+    .page-hero h1 { font-family: "Syne", sans-serif; font-weight: 800; font-size: 2rem; margin-bottom: 10px; }
+    .page-hero p { color: var(--muted); font-size: 0.95rem; max-width: 520px; margin: 0 auto; line-height: 1.6; }
+
+    /* Article card (index) */
+    .article-index { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 56px; }
+    .article-thumb { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: inherit; transition: border-color 0.2s, transform 0.2s; }
+    .article-thumb:hover { border-color: rgba(108,99,255,0.4); transform: translateY(-2px); }
+    .art-tag { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--accent); }
+    .art-title { font-family: "Syne", sans-serif; font-weight: 700; font-size: 0.9rem; line-height: 1.4; }
+    .art-excerpt { color: var(--muted); font-size: 0.8rem; line-height: 1.55; flex: 1; }
+    .art-read { font-size: 0.78rem; color: var(--accent); font-weight: 500; margin-top: 4px; }
+
+    /* Full article */
+    .article { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 40px 44px; margin-bottom: 32px; scroll-margin-top: 24px; }
+    .article-meta { display: flex; gap: 14px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+    .article-tag { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; background: rgba(108,99,255,0.12); color: var(--accent); border: 1px solid rgba(108,99,255,0.25); padding: 3px 10px; border-radius: 20px; }
+    .article-date { color: var(--muted); font-size: 0.78rem; }
+    .article-read-time { color: var(--muted); font-size: 0.78rem; }
+    .article h2 { font-family: "Syne", sans-serif; font-weight: 800; font-size: 1.5rem; margin-bottom: 16px; line-height: 1.3; }
+    .article h3 { font-family: "Syne", sans-serif; font-weight: 700; font-size: 1rem; margin: 24px 0 8px; color: var(--text); }
+    .article p { color: var(--muted); line-height: 1.8; margin-bottom: 14px; font-size: 0.91rem; }
+    .article ul, .article ol { color: var(--muted); margin: 8px 0 14px 22px; font-size: 0.91rem; line-height: 1.8; }
+    .article li { margin-bottom: 6px; }
+    .article strong { color: var(--text); font-weight: 600; }
+    .article a { color: var(--accent); }
+    .article-divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+    .callout { background: rgba(108,99,255,0.07); border: 1px solid rgba(108,99,255,0.18); border-radius: 12px; padding: 16px 20px; margin: 18px 0; font-size: 0.88rem; color: var(--text); line-height: 1.65; }
+    .callout-green { background: rgba(67,233,123,0.07); border-color: rgba(67,233,123,0.18); }
+
+    /* Footer */
+    site-footer { display: block; text-align: center; padding: 32px 0 0; border-top: 1px solid var(--border); margin-top: 40px; }
+    site-footer a { color: var(--muted); text-decoration: none; font-size: 0.8rem; margin: 0 10px; transition: color 0.2s; }
+    site-footer a:hover { color: var(--text); }
+    .copy { color: var(--muted); font-size: 0.75rem; margin-top: 12px; }
+
+    @media (max-width: 600px) {
+      .app { padding: 16px 14px 48px; }
+      header { flex-direction: column; align-items: center; justify-content: center; text-align: center; padding-bottom: 24px; gap: 14px; }
+      .nav-links { justify-content: center; gap: 16px; }
+      .page-hero h1 { font-size: 1.5rem; }
+      .article-index { grid-template-columns: 1fr; }
+      .article { padding: 24px 18px; }
+      .article h2 { font-size: 1.2rem; }
+      site-footer a { margin: 0 6px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-orbs">
+    <div class="orb orb1"></div>
+    <div class="orb orb2"></div>
+    <div class="orb orb3"></div>
+  </div>
+
+  <div class="app">
+    <header>
+      <a href="/" class="logo">Send Master ✦</a>
+      <nav class="nav-links">
+        <a href="/">Home</a>
+        <a href="/about.html">About</a>
+        <a href="/contact.html">Contact</a>
+        <a href="/privacy.html">Privacy</a>
+      </nav>
+    </header>
+
+    <div class="page-hero">
+      <h1>File Sharing Tips &amp; Guides</h1>
+      <p>Practical advice on sending large files, transferring between devices, and keeping your data private.</p>
+    </div>
+
+    <!-- Article index -->
+    <div class="article-index">
+      <a href="#large-files" class="article-thumb">
+        <div class="art-tag">Guide</div>
+        <div class="art-title">How to Share Large Files Without Email Attachments</div>
+        <div class="art-excerpt">Email limits files to 25 MB. Here's how to send gigabytes instantly using a shareable link.</div>
+        <div class="art-read">Read article →</div>
+      </a>
+      <a href="#lan-transfer" class="article-thumb">
+        <div class="art-tag">Tutorial</div>
+        <div class="art-title">Transfer Files at Full Speed Over Wi-Fi — No Internet Needed</div>
+        <div class="art-excerpt">LAN P2P mode bypasses the internet entirely, sending files directly between nearby devices.</div>
+        <div class="art-read">Read article →</div>
+      </a>
+      <a href="#privacy" class="article-thumb">
+        <div class="art-tag">Privacy</div>
+        <div class="art-title">Why Temporary Links Are Better Than Cloud Storage for Private Files</div>
+        <div class="art-excerpt">Permanent cloud links are a privacy risk. Auto-expiring links leave no digital footprint.</div>
+        <div class="art-read">Read article →</div>
+      </a>
+    </div>
+
+    <!-- ── Article 1 ─────────────────────────────────────────────────────── -->
+    <div class="article" id="large-files">
+      <div class="article-meta">
+        <span class="article-tag">Guide</span>
+        <span class="article-date">June 2026</span>
+        <span class="article-read-time">5 min read</span>
+      </div>
+      <h2>How to Share Large Files Without Email Attachments</h2>
+
+      <p>Email was never designed for sending large files. Gmail caps attachments at 25 MB. Outlook stops at 20 MB. If you've ever tried to send a video, a high-resolution photo collection, or a software build to a colleague, you've hit this wall. So what are your options?</p>
+
+      <h3>Why Email Attachments Fall Short</h3>
+      <p>Email attachment limits exist because email servers store every message — including its attachments — indefinitely on multiple servers. Allowing large attachments would balloon storage costs and slow down global mail delivery. The result is a hard 20–25 MB ceiling that hasn't meaningfully changed in years.</p>
+      <p>Workarounds like compressing files, splitting archives, or using WeTransfer require the recipient to jump through extra hoops. And cloud storage solutions like Google Drive or Dropbox require both parties to have accounts and manage folder permissions.</p>
+
+      <h3>A Better Approach: Shareable Upload Links</h3>
+      <p>The cleanest solution for one-off file transfers is a link-based approach: upload the file to a temporary server, then share a single URL. The recipient clicks the link and downloads directly — no account, no app, no waiting for an email to arrive.</p>
+      <p>With <strong>SendMaster</strong>, the process takes about 30 seconds:</p>
+      <ol>
+        <li>Drag your file (or multiple files) onto the upload area</li>
+        <li>Copy the generated link — or scan the QR code with your phone</li>
+        <li>Send the link however you like: WhatsApp, Slack, SMS, or even email as a URL</li>
+        <li>The recipient opens the link and downloads with a real-time progress bar</li>
+      </ol>
+
+      <div class="callout">
+        <strong>File size tip:</strong> SendMaster supports uploads up to 1 GB per transfer. For files larger than this, consider splitting into parts using a tool like 7-Zip or use the LAN P2P mode if both devices are on the same network — there's no size limit for local transfers.
+      </div>
+
+      <h3>What About Multiple Files?</h3>
+      <p>You can upload multiple files in a single transfer. All files are bundled under one share link. Recipients see a list of all files with their sizes and can download them individually or all at once. The total combined size of all files must stay within the 1 GB limit.</p>
+
+      <h3>When the Link Expires</h3>
+      <p>Transfer links are active for <strong>24 hours</strong> after upload. After that, the link expires and all files are permanently deleted from the server. This is intentional — it means you don't need to remember to clean up after yourself, and recipients who download late aren't left with stale data.</p>
+      <p>If someone needs access beyond 24 hours, simply upload again and share the new link.</p>
+
+      <h3>Compared to Other Methods</h3>
+      <ul>
+        <li><strong>Email attachment:</strong> 20–25 MB limit, copies stored on multiple servers indefinitely</li>
+        <li><strong>Google Drive / Dropbox:</strong> Requires accounts on both sides, permission management, manual cleanup</li>
+        <li><strong>WeTransfer free:</strong> 2 GB limit, 7-day expiry, requires email, shows ads on download page</li>
+        <li><strong>SendMaster:</strong> Up to 1 GB, no accounts required, auto-deleted after 24 hours, QR code included</li>
+      </ul>
+
+      <p>For most day-to-day file sharing needs — sending a project to a client, sharing a video with a friend, or distributing files to a group — a temporary shareable link is faster, simpler, and more private than any alternative.</p>
+
+      <div class="callout callout-green">
+        Ready to try it? <a href="/">Go to SendMaster →</a> — drag a file and get a shareable link in seconds.
+      </div>
+    </div>
+
+    <!-- ── Article 2 ─────────────────────────────────────────────────────── -->
+    <div class="article" id="lan-transfer">
+      <div class="article-meta">
+        <span class="article-tag">Tutorial</span>
+        <span class="article-date">June 2026</span>
+        <span class="article-read-time">4 min read</span>
+      </div>
+      <h2>Transfer Files at Full Speed Over Wi-Fi — No Internet Required</h2>
+
+      <p>When both devices are on the same Wi-Fi network — at home, in the office, or at a coffee shop — there's a much faster way to share files than uploading to the cloud and downloading again. SendMaster's <strong>LAN mode</strong> creates a direct device-to-device connection that bypasses the internet entirely.</p>
+
+      <h3>What Is LAN File Transfer?</h3>
+      <p>LAN stands for Local Area Network — the private network created by your router that connects all devices in your home or office. Instead of sending data from your laptop to a server in a data centre and back down to a phone sitting 2 metres away, a LAN transfer sends data directly between the two devices over your router.</p>
+      <p>This matters for speed. Your home router might connect devices at 300–1,000 Mbps. Your internet connection might only be 50–100 Mbps. LAN transfers run at the faster local speed, making them anywhere from 5× to 20× faster for large files.</p>
+
+      <h3>How SendMaster LAN Mode Works</h3>
+      <p>SendMaster uses <strong>WebRTC</strong> — the same peer-to-peer technology used by video calling apps — to establish a direct encrypted channel between two browsers. Here's how to use it:</p>
+      <ol>
+        <li>On the <strong>sending device</strong>, switch to the "LAN Share" tab and click "Start Sharing". You'll see a 4-digit code and a QR code.</li>
+        <li>On the <strong>receiving device</strong> (must be on the same Wi-Fi), open SendMaster and switch to the "LAN Share" tab. Tap "Receive Files" and enter the 4-digit code — or scan the QR code with the camera.</li>
+        <li>Once connected, drag files into the send area or click to select them. They transfer immediately with a live progress bar on both devices.</li>
+      </ol>
+
+      <div class="callout">
+        <strong>No internet needed for the transfer itself.</strong> SendMaster uses a signalling server only to establish the initial handshake (like exchanging phone numbers before a call). Once connected, all file data travels directly between devices — your ISP never sees it.
+      </div>
+
+      <h3>Practical Use Cases</h3>
+      <ul>
+        <li><strong>Laptop to phone:</strong> Move a video you shot to your phone for sharing on social media — instantly, at full quality, no cloud compression.</li>
+        <li><strong>PC to PC in the office:</strong> Transfer a large project folder between workstations without going through a shared drive.</li>
+        <li><strong>Sharing with multiple people:</strong> In a classroom or meeting, everyone can connect and receive the same files simultaneously.</li>
+        <li><strong>No internet access:</strong> LAN mode works even if the Wi-Fi has no internet connection — on a plane, at a remote site, or on a private network.</li>
+      </ul>
+
+      <h3>What's the File Size Limit?</h3>
+      <p>LAN transfers have <strong>no file size limit</strong>. Since files never leave your local network, there's no server storage to worry about. The only practical limit is how much RAM the receiving browser can handle for very large files, but transfers of 10–20 GB work fine in most modern browsers.</p>
+
+      <h3>Privacy and Security</h3>
+      <p>WebRTC connections are encrypted end-to-end using DTLS-SRTP — the same encryption standard used by WhatsApp calls and Zoom meetings. Your files cannot be intercepted between devices on the same network. And since nothing is uploaded to a server, there's nothing to delete later.</p>
+
+      <div class="callout callout-green">
+        Both devices need to be on the same Wi-Fi network. Open <a href="/">SendMaster</a> on both, switch to the LAN tab, and start transferring.
+      </div>
+    </div>
+
+    <!-- ── Article 3 ─────────────────────────────────────────────────────── -->
+    <div class="article" id="privacy">
+      <div class="article-meta">
+        <span class="article-tag">Privacy</span>
+        <span class="article-date">June 2026</span>
+        <span class="article-read-time">4 min read</span>
+      </div>
+      <h2>Why Temporary Links Are Better Than Cloud Storage for Private Files</h2>
+
+      <p>Every time you upload a file to Google Drive, Dropbox, or OneDrive and share it with someone, that file has a permanent home on a remote server. The link you share may be revoked, but the file itself often lingers — in backups, in the recipient's "Shared with me" section, and in your own storage until manually deleted. For sensitive files, this is a privacy problem worth thinking about.</p>
+
+      <h3>The Problem With Permanent Cloud Links</h3>
+      <p>Cloud storage platforms are designed for long-term retention. That's great for documents you want to access in five years — but for a one-time file transfer, it means you're creating a data residue you probably didn't intend.</p>
+      <ul>
+        <li><strong>Shared links can be forwarded</strong> — a link you sent to one person can be passed to others without your knowledge.</li>
+        <li><strong>Files persist in backups</strong> — even if you delete a file from Google Drive, it may remain in 30-day backup snapshots.</li>
+        <li><strong>Access logs are kept</strong> — platforms log who accessed what and when, building a profile of your file-sharing behaviour.</li>
+        <li><strong>Account linkage</strong> — every file you share is tied to your account, creating a permanent record in your file history.</li>
+      </ul>
+
+      <h3>How Temporary Links Change the Equation</h3>
+      <p>A temporary link that automatically expires after 24 hours solves most of these problems by design:</p>
+      <ul>
+        <li><strong>Self-cleaning:</strong> You don't have to remember to delete anything. The link and file disappear on schedule.</li>
+        <li><strong>No account linkage:</strong> SendMaster requires no account, so uploaded files are not tied to any identity or profile.</li>
+        <li><strong>No forwarding risk after expiry:</strong> Even if the link is forwarded, it stops working after 24 hours. There's a natural time limit on access.</li>
+        <li><strong>Minimal logs:</strong> Server access logs are retained for security purposes only and rotated within 30 days.</li>
+      </ul>
+
+      <div class="callout">
+        <strong>What gets stored?</strong> SendMaster stores the file, its name, size, and an expiry timestamp. No user identity, no IP-to-file association in the database. Access logs are standard web server logs kept for 30 days for abuse monitoring, then deleted. See our <a href="/privacy.html">Privacy Policy</a> for full details.
+      </div>
+
+      <h3>When Should You Use Temporary vs Permanent Storage?</h3>
+      <p>Not every file transfer needs a temporary link. Here's a simple guide:</p>
+      <ul>
+        <li><strong>Use temporary links (SendMaster):</strong> One-time file delivery, client deliverables, confidential documents, personal photos sent to a friend, files where you want the other party to receive but not retain indefinitely.</li>
+        <li><strong>Use cloud storage (Drive, Dropbox):</strong> Ongoing collaboration, files that need to be edited by multiple people, long-term archival, documents you'll need to reference repeatedly.</li>
+      </ul>
+
+      <h3>LAN Transfers: Maximum Privacy</h3>
+      <p>For the highest level of privacy, the LAN transfer mode is ideal. Files travel directly between devices without touching any server at all. There is no upload, no download from a remote server, and no log entry. The transfer is as private as handing someone a USB drive — except faster and without the need for a cable.</p>
+
+      <h3>Practical Tips for Sensitive File Sharing</h3>
+      <ul>
+        <li>For documents with personal data (contracts, ID scans, medical records), use LAN mode when possible, or the cloud upload with a 24-hour expiry.</li>
+        <li>Share links via an encrypted channel (Signal, WhatsApp) rather than plain email.</li>
+        <li>Check the download count on the share page to confirm the intended recipient downloaded the file before the link expires.</li>
+        <li>For extra caution, upload immediately before the recipient is ready to download — minimising the window the link is active.</li>
+      </ul>
+
+      <div class="callout callout-green">
+        Privacy-first file sharing starts at <a href="/">SendMaster's homepage</a>. No account, no tracking, auto-deleted after 24 hours.
+      </div>
+    </div>
+
+    <site-footer>
+      <a href="/">Home</a>
+      <a href="/about.html">About</a>
+      <a href="/blog.html">Blog</a>
+      <a href="/privacy.html">Privacy Policy</a>
+      <a href="/terms.html">Terms of Service</a>
+      <a href="/contact.html">Contact</a>
+      <p class="copy">&copy; 2026 Master Brains Solutions. All rights reserved.</p>
+    </site-footer>
+  </div>
+</body>
+</html>
