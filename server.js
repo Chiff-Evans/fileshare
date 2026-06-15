@@ -22,7 +22,8 @@ const cron = require("node-cron");
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 9999;
-const MAX_FILE_SIZE = parseInt(process.env.MAX_FILE_SIZE, 10) || 1 * 1024 * 1024 * 1024;
+const MAX_FILE_SIZE =
+  parseInt(process.env.MAX_FILE_SIZE, 10) || 1 * 1024 * 1024 * 1024;
 const DB_HOST = process.env.DB_HOST || "localhost";
 const DB_USER = process.env.DB_USER || "root";
 const DB_PASS = process.env.DB_PASS || "1234";
@@ -94,9 +95,11 @@ async function initDB() {
     `);
     await conn.query(`INSERT IGNORE INTO stats (id) VALUES (1)`);
     // Migration: add lan column for databases created before this version
-    await conn.query(
-      `ALTER TABLE stats ADD COLUMN IF NOT EXISTS total_lan_transfers BIGINT UNSIGNED DEFAULT 0`
-    ).catch(() => {});
+    await conn
+      .query(
+        `ALTER TABLE stats ADD COLUMN IF NOT EXISTS total_lan_transfers BIGINT UNSIGNED DEFAULT 0`,
+      )
+      .catch(() => {});
     console.log("Database tables ready.");
   } finally {
     conn.release();
@@ -138,7 +141,7 @@ async function cleanupExpired() {
 function fmtBytes(b) {
   if (b >= 1024 ** 3) return (b / 1024 ** 3).toFixed(1) + " GB";
   if (b >= 1024 ** 2) return (b / 1024 ** 2).toFixed(1) + " MB";
-  if (b >= 1024)      return (b / 1024).toFixed(1) + " KB";
+  if (b >= 1024) return (b / 1024).toFixed(1) + " KB";
   return b + " B";
 }
 
@@ -194,6 +197,7 @@ const upload = multer({
 
 // ─── Express app ──────────────────────────────────────────────────────────────
 const app = express();
+app.set("trust proxy", 1); // trust X-Forwarded-Proto from Apache/nginx
 app.use(express.json());
 
 // ─── GET /d/:token — serve index.html (JS reads token from pathname) ─────────
@@ -207,7 +211,9 @@ app.post("/upload", prepareUpload, checkContentLength, (req, res) => {
   upload.array("files")(req, res, async (multerErr) => {
     const cleanupDir = () => {
       const dir = path.join(__dirname, "uploads", req.uploadToken);
-      try { fs.rmSync(dir, { recursive: true, force: true }); } catch (_) {}
+      try {
+        fs.rmSync(dir, { recursive: true, force: true });
+      } catch (_) {}
     };
 
     if (multerErr) {
@@ -266,9 +272,12 @@ app.post("/upload", prepareUpload, checkContentLength, (req, res) => {
           );
         }
 
-        await conn.query(`UPDATE stats SET total_uploads = total_uploads + 1 WHERE id = 1`);
+        await conn.query(
+          `UPDATE stats SET total_uploads = total_uploads + 1 WHERE id = 1`,
+        );
 
-        const downloadUrl = `${req.protocol}://${req.get("host")}/d/${token}`;
+        const proto = req.headers["x-forwarded-proto"]?.split(",")[0].trim() || req.protocol;
+        const downloadUrl = `${proto}://${req.get("host")}/d/${token}`;
         return res.json({
           token,
           downloadUrl,
@@ -293,7 +302,9 @@ app.get("/d/:token/info", async (req, res) => {
       token,
     ]);
     if (rows.length === 0) {
-      return res.status(404).json({ error: "Upload not found." });
+      return res
+        .status(404)
+        .json({ error: "Upload not found / Upload Expired." });
     }
     const upload = rows[0];
     if (new Date(upload.expires_at) < new Date()) {
@@ -377,7 +388,9 @@ app.get("/d/:token/file/:fileId", async (req, res) => {
       "UPDATE uploads SET download_count = download_count + 1 WHERE id = ?",
       [uploadRecord.id],
     );
-    await conn.query(`UPDATE stats SET total_downloads = total_downloads + 1 WHERE id = 1`);
+    await conn.query(
+      `UPDATE stats SET total_downloads = total_downloads + 1 WHERE id = 1`,
+    );
 
     const stat = fs.statSync(filePath);
     res.setHeader(
@@ -404,15 +417,16 @@ app.get("/d/:token/file/:fileId", async (req, res) => {
 app.get("/stats", async (req, res) => {
   try {
     const [rows] = await pool.query(
-      "SELECT total_uploads, total_downloads, total_lan_transfers FROM stats WHERE id = 1"
+      "SELECT total_uploads, total_downloads, total_lan_transfers FROM stats WHERE id = 1",
     );
     const row = rows[0] || {};
-    res.set('Cache-Control', 'no-store');
+    res.set("Cache-Control", "no-store");
     // parseInt(String(...)) safely handles BigInt, string, and number values
     res.json({
-      totalUploads:      parseInt(String(row.total_uploads      ?? 0), 10) || 0,
-      totalDownloads:    parseInt(String(row.total_downloads    ?? 0), 10) || 0,
-      totalLanTransfers: parseInt(String(row.total_lan_transfers ?? 0), 10) || 0,
+      totalUploads: parseInt(String(row.total_uploads ?? 0), 10) || 0,
+      totalDownloads: parseInt(String(row.total_downloads ?? 0), 10) || 0,
+      totalLanTransfers:
+        parseInt(String(row.total_lan_transfers ?? 0), 10) || 0,
     });
   } catch (err) {
     console.error("Stats error:", err.message);
@@ -424,7 +438,7 @@ app.get("/stats", async (req, res) => {
 app.post("/stats/lan-transfer", async (req, res) => {
   try {
     await pool.query(
-      "UPDATE stats SET total_lan_transfers = total_lan_transfers + 1 WHERE id = 1"
+      "UPDATE stats SET total_lan_transfers = total_lan_transfers + 1 WHERE id = 1",
     );
     res.json({ ok: true });
   } catch (err) {
@@ -439,13 +453,16 @@ app.get("/config.json", (req, res) => {
   // When behind Apache/nginx on 443, Host has no port suffix → default to 443/80.
   const forwarded = req.headers["x-forwarded-proto"];
   const isLocalhost = (req.get("host") || "").match(/^localhost|^127\.|^::1/);
-  const proto = forwarded || (useHttps ? "https" : isLocalhost ? "http" : "https");
+  const proto =
+    forwarded || (useHttps ? "https" : isLocalhost ? "http" : "https");
   const hostHeader = req.get("host") || "";
   const externalPort = hostHeader.includes(":")
     ? parseInt(hostHeader.split(":")[1], 10)
-    : proto === "https" ? 443 : 80;
+    : proto === "https"
+      ? 443
+      : 80;
 
-  res.set('Cache-Control', 'no-store');
+  res.set("Cache-Control", "no-store");
   res.json({
     peerHost: process.env.PEER_HOST || null,
     peerPort: externalPort,
@@ -456,9 +473,9 @@ app.get("/config.json", (req, res) => {
     maxFileSize: MAX_FILE_SIZE,
     emails: {
       general: process.env.EMAIL_GENERAL || "",
-      abuse:   process.env.EMAIL_ABUSE   || "",
+      abuse: process.env.EMAIL_ABUSE || "",
       privacy: process.env.EMAIL_PRIVACY || "",
-      legal:   process.env.EMAIL_LEGAL   || "",
+      legal: process.env.EMAIL_LEGAL || "",
     },
   });
 });

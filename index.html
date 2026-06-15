@@ -1,14 +1,57 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1449383083463959"
+     crossorigin="anonymous"></script>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SendMaster — Instant File Sharing</title>
+    <title>SendMaster — Free Instant File Sharing, No Sign-Up Required</title>
+    <meta name="description" content="Share files up to 1 GB instantly with a link or QR code. No account needed. Files auto-delete after 24 hours. Free LAN P2P transfers at full Wi-Fi speed." />
+    <meta name="keywords" content="file sharing, send large files, share files online, no sign up file share, free file transfer, LAN file transfer, temporary file sharing, send files without email" />
+    <meta name="author" content="Master Brains Solutions" />
+    <link rel="canonical" href="https://sendfilemaster.com/" />
+    <meta property="og:title" content="SendMaster — Free Instant File Sharing" />
+    <meta property="og:description" content="Upload any file up to 1 GB and share it with a link or QR code. No registration. Auto-deleted after 24 hours." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://sendfilemaster.com/" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="SendMaster — Free Instant File Sharing" />
+    <meta name="twitter:description" content="Upload any file up to 1 GB and share it with a link or QR code. No registration required." />
     <meta name="theme-color" content="#6c63ff" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="SendMaster" />
-    <meta name="description" content="Instant file sharing — upload once, share anywhere." />
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "SendMaster",
+      "url": "https://sendfilemaster.com",
+      "description": "Free instant file sharing up to 1 GB with no registration. Share via link or QR code. Files auto-deleted after 24 hours. Supports LAN peer-to-peer transfers.",
+      "applicationCategory": "UtilityApplication",
+      "operatingSystem": "Any",
+      "browserRequirements": "Requires a modern browser with JavaScript enabled",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "featureList": [
+        "Upload files up to 1 GB",
+        "Share via link or QR code",
+        "No registration required",
+        "Auto-delete after 24 hours",
+        "LAN peer-to-peer transfers",
+        "Works on any device and browser",
+        "Progressive Web App (installable)"
+      ],
+      "provider": {
+        "@type": "Organization",
+        "name": "Master Brains Solutions",
+        "url": "https://sendfilemaster.com"
+      }
+    }
+    </script>
     <link rel="manifest" href="/manifest.json" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.2/peerjs.min.js"></script>
@@ -714,6 +757,34 @@
       .info-title { font-family: "Syne", sans-serif; font-weight: 700; font-size: 0.95rem; margin-bottom: 6px; }
       .info-desc { color: var(--muted); font-size: 0.8rem; line-height: 1.5; }
 
+      /* Use-cases section */
+      .section-heading { font-family: "Syne", sans-serif; font-weight: 800; font-size: 1.25rem; margin: 44px 0 18px; text-align: center; }
+      .section-sub { color: var(--muted); font-size: 0.88rem; text-align: center; margin-top: -12px; margin-bottom: 20px; }
+      .use-cases { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+      .use-case { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px 22px; display: flex; gap: 14px; align-items: flex-start; }
+      .use-case-icon { font-size: 1.5rem; flex-shrink: 0; margin-top: 2px; }
+      .use-case-title { font-family: "Syne", sans-serif; font-weight: 700; font-size: 0.88rem; margin-bottom: 4px; }
+      .use-case-desc { color: var(--muted); font-size: 0.8rem; line-height: 1.55; }
+
+      /* FAQ section */
+      .faq-list { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+      .faq-item { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+      .faq-q { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 20px; cursor: pointer; font-weight: 500; font-size: 0.9rem; user-select: none; transition: background 0.15s; }
+      .faq-q:hover { background: var(--surface2); }
+      .faq-arrow { flex-shrink: 0; color: var(--muted); transition: transform 0.25s; }
+      .faq-item.open .faq-arrow { transform: rotate(180deg); }
+      .faq-a { max-height: 0; overflow: hidden; transition: max-height 0.3s ease, padding 0.2s; padding: 0 20px; color: var(--muted); font-size: 0.87rem; line-height: 1.7; }
+      .faq-item.open .faq-a { max-height: 300px; padding: 0 20px 16px; }
+
+      /* Blog preview */
+      .blog-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+      .blog-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: inherit; transition: border-color 0.2s, transform 0.2s; }
+      .blog-card:hover { border-color: rgba(108,99,255,0.4); transform: translateY(-2px); }
+      .blog-tag { font-size: 0.7rem; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; color: var(--accent); }
+      .blog-title { font-family: "Syne", sans-serif; font-weight: 700; font-size: 0.88rem; line-height: 1.4; }
+      .blog-excerpt { color: var(--muted); font-size: 0.8rem; line-height: 1.55; flex: 1; }
+      .blog-read { font-size: 0.78rem; color: var(--accent); font-weight: 500; }
+
       /* Speed badge */
       .speed-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(67,233,123,0.1); color: var(--accent3); border: 1px solid rgba(67,233,123,0.2); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 500; }
 
@@ -806,6 +877,9 @@
         .app { padding: 16px 14px 48px; }
         .card { padding: 18px 16px; }
         .info-grid { grid-template-columns: 1fr; }
+        .use-cases { grid-template-columns: 1fr; }
+        .blog-grid { grid-template-columns: 1fr; }
+        .section-heading { font-size: 1.1rem; margin: 32px 0 14px; }
 
         header { padding: 4px 0 20px; justify-content: center; gap: 12px; }
         .logo { font-size: 1.15rem; }
@@ -1246,11 +1320,131 @@
           </div>
         </div>
 
+        <!-- ── Use Cases ─────────────────────────────────────────────── -->
+        <div class="section-heading">Who Uses SendMaster?</div>
+        <p class="section-sub">Built for anyone who needs to move files fast — no accounts, no friction.</p>
+        <div class="use-cases">
+          <div class="use-case">
+            <div class="use-case-icon">&#x1F4BC;</div>
+            <div>
+              <div class="use-case-title">Remote Teams &amp; Freelancers</div>
+              <div class="use-case-desc">Send design mockups, video drafts, or project archives to clients and colleagues instantly. No cloud sign-up required on either end — just share the link.</div>
+            </div>
+          </div>
+          <div class="use-case">
+            <div class="use-case-icon">&#x1F3EB;</div>
+            <div>
+              <div class="use-case-title">Students &amp; Educators</div>
+              <div class="use-case-desc">Share lecture notes, assignment files, or presentations with classmates without worrying about email attachment limits or storage quotas.</div>
+            </div>
+          </div>
+          <div class="use-case">
+            <div class="use-case-icon">&#x1F4F8;</div>
+            <div>
+              <div class="use-case-title">Photographers &amp; Creators</div>
+              <div class="use-case-desc">Deliver large RAW photo batches or video files to clients with a single link and QR code. Files are auto-deleted after 24 hours — nothing lingers.</div>
+            </div>
+          </div>
+          <div class="use-case">
+            <div class="use-case-icon">&#x1F3E0;</div>
+            <div>
+              <div class="use-case-title">Home &amp; Office Networks</div>
+              <div class="use-case-desc">On the same Wi-Fi? Use LAN P2P mode to transfer gigabytes between devices at full local speed — no internet required, no data leaves your network.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── FAQ ───────────────────────────────────────────────────── -->
+        <div class="section-heading">Frequently Asked Questions</div>
+        <div class="faq-list">
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span>What file types can I share?</span>
+              <svg class="faq-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="faq-a">Any file type is supported — documents, images, videos, archives, executables, or any other binary. There are no restrictions on file format. The only limit is total upload size, which is set by the administrator (default 1 GB).</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span>How long are my files stored?</span>
+              <svg class="faq-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="faq-a">Files are stored for 24 hours from the time of upload. After that, the transfer link expires and all files are permanently and automatically deleted from our servers. We do not maintain backups of uploaded content — once deleted, the files are gone.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span>Is there a file size limit?</span>
+              <svg class="faq-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="faq-a">The default maximum upload size is 1 GB per transfer. You can upload multiple files in a single transfer as long as their combined size does not exceed this limit. The recipient downloads each file individually with a real-time progress bar. For very large files, the LAN P2P transfer mode has no size limit since files are sent directly between devices.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span>Do I need to create an account?</span>
+              <svg class="faq-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="faq-a">No. SendMaster requires zero registration. There are no accounts, no passwords, no email confirmation, and no personal information collected. You upload a file, share the link, and that's it. The person receiving the file also needs no account to download.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span>How does LAN (local) sharing work?</span>
+              <svg class="faq-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="faq-a">LAN mode uses WebRTC peer-to-peer technology to create a direct connection between two devices on the same Wi-Fi or local network. The sender gets a short code or QR code that the receiver scans or enters. Files travel directly device-to-device — they never leave your network or touch our servers. This makes LAN transfers both faster and more private than cloud uploads.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span>Is my file secure during transfer?</span>
+              <svg class="faq-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="faq-a">Cloud uploads are protected by HTTPS (TLS encryption) in transit and stored using an unguessable random token — only someone with the link can download your file. LAN transfers are end-to-end encrypted by WebRTC. We do not scan, analyse, or access the content of uploaded files. Files are automatically deleted after 24 hours with no backups retained.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span>Can the recipient download the file multiple times?</span>
+              <svg class="faq-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="faq-a">Yes. The share link remains active for the full 24 hours and the file can be downloaded as many times as needed during that window. The download page shows a count of how many times the file has been downloaded so far. After the link expires, downloads are no longer possible.</div>
+          </div>
+          <div class="faq-item">
+            <div class="faq-q" onclick="toggleFaq(this)">
+              <span>Does SendMaster work on mobile?</span>
+              <svg class="faq-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="faq-a">Yes — fully. SendMaster is a Progressive Web App (PWA) designed to work on any browser on any device, including iOS, Android, Windows, macOS, and Linux. You can also install it to your home screen for a native-app experience. No app store download is needed.</div>
+          </div>
+        </div>
+
+        <!-- ── Blog preview ───────────────────────────────────────────── -->
+        <div class="section-heading">File Sharing Tips &amp; Guides</div>
+        <p class="section-sub">Practical advice on sending files faster and more securely.</p>
+        <div class="blog-grid">
+          <a href="/blog.html#large-files" class="blog-card">
+            <div class="blog-tag">Guide</div>
+            <div class="blog-title">How to Share Large Files Without Email Attachments</div>
+            <div class="blog-excerpt">Email limits files to 25 MB. Here's how to send gigabytes of data to anyone in seconds using a share link.</div>
+            <div class="blog-read">Read more →</div>
+          </a>
+          <a href="/blog.html#lan-transfer" class="blog-card">
+            <div class="blog-tag">Tutorial</div>
+            <div class="blog-title">Transfer Files at Full Speed Over Wi-Fi — No Internet Needed</div>
+            <div class="blog-excerpt">LAN P2P mode sends files directly between devices at your router's maximum speed. Here's how it works.</div>
+            <div class="blog-read">Read more →</div>
+          </a>
+          <a href="/blog.html#privacy" class="blog-card">
+            <div class="blog-tag">Privacy</div>
+            <div class="blog-title">Why Temporary Links Beat Cloud Storage for Sensitive Files</div>
+            <div class="blog-excerpt">Permanent cloud links are a privacy risk. Temporary links that self-destruct after 24 hours are safer for confidential files.</div>
+            <div class="blog-read">Read more →</div>
+          </a>
+        </div>
+
       </div><!-- end #normalView -->
 
       <footer style="text-align:center;padding:32px 0 0;border-top:1px solid var(--border);margin-top:40px">
         <nav style="display:flex;flex-wrap:wrap;justify-content:center;gap:6px 18px">
           <a href="/about.html" style="color:var(--muted);text-decoration:none;font-size:0.8rem;transition:color 0.2s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">About</a>
+          <a href="/blog.html" style="color:var(--muted);text-decoration:none;font-size:0.8rem;transition:color 0.2s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Blog</a>
           <a href="/privacy.html" style="color:var(--muted);text-decoration:none;font-size:0.8rem;transition:color 0.2s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Privacy Policy</a>
           <a href="/terms.html" style="color:var(--muted);text-decoration:none;font-size:0.8rem;transition:color 0.2s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Terms of Service</a>
           <a href="/contact.html" style="color:var(--muted);text-decoration:none;font-size:0.8rem;transition:color 0.2s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">Contact</a>
@@ -1264,6 +1458,13 @@
       // ═══════════════════════════════════════════════════════════════════════
       // Shared Utilities
       // ═══════════════════════════════════════════════════════════════════════
+
+      function toggleFaq(btn) {
+        const item = btn.closest('.faq-item');
+        const wasOpen = item.classList.contains('open');
+        document.querySelectorAll('.faq-item.open').forEach(el => el.classList.remove('open'));
+        if (!wasOpen) item.classList.add('open');
+      }
 
       function fmtSize(bytes) {
         if (bytes < 1024) return bytes + ' B';
