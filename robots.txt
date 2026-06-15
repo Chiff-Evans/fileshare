@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Block API and dynamic endpoints — no content value for crawlers
+Disallow: /upload
+Disallow: /stats
+Disallow: /health
+Disallow: /config.json
+Disallow: /d/
+
+Sitemap: https://sendfilemaster.com/sitemap.xml
